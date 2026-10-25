@@ -139,7 +139,7 @@ function App() {
           <a href="#contact">Contact</a>
         </nav>
         <button className="login-trigger" type="button" onClick={() => setIsLoginOpen(true)}>
-          Teacher login
+          Login
         </button>
       </header>
 
@@ -216,6 +216,10 @@ function App() {
         />
       </section>
 
+      <footer className="welcome-footer">
+        <p>© 2026 Hiwaga. All rights reserved. Made for Little Einstein Discovery School of Caloocan</p>
+      </footer>
+
       {isLoginOpen && (
         <div
           className="login-backdrop"
@@ -229,8 +233,8 @@ function App() {
           <section className="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title">
             <header className="login-dialog-header">
               <div>
-                <h2 id="login-title">Teacher Portal</h2>
-                <p>Log in to see Hiwaga records.</p>
+                <h2 id="login-title">Login Portal</h2>
+                <p>Sign in to see the Hiwaga dashboard.</p>
               </div>
               <button
                 className="login-close"

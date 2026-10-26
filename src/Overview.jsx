@@ -2,6 +2,12 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import DataTable from './DataTable.jsx'
 import hiwagaLogo from './assets/hiwagalogo.png'
+import {
+  compareRecordsByTime,
+  getColumns,
+  getProfileLabel,
+  getProfileUuid,
+} from './utils/formatters'
 
 const PlayCount = lazy(() => import('./charts/playcount.jsx'))
 const Records = lazy(() => import('./Records.jsx'))
@@ -13,49 +19,22 @@ const Leaderboard = lazy(() => import('./Leaderboard.jsx'))
 const dashboardViews = ['overview', 'leaderboard', 'records', 'questions', 'students', 'teachers']
 const activeViewStorageKey = 'hiwaga-dashboard-active-view'
 
-const getProfileUuid = (profile) => profile.uuid ?? profile.user_id ?? profile.id
-
-const getProfileLabel = (profile) => (
-  [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(' ') || String(getProfileUuid(profile))
-)
-
-const compareRecordsByTime = (firstRecord, secondRecord, direction = -1) => {
-  const firstValue = firstRecord.Time
-  const secondValue = secondRecord.Time
-
-  if (firstValue === null || firstValue === undefined) return 1
-  if (secondValue === null || secondValue === undefined) return -1
-
-  const firstDate = Date.parse(firstRecord.Date)
-  const secondDate = Date.parse(secondRecord.Date)
-
-  if (Number.isFinite(firstDate) && Number.isFinite(secondDate) && firstDate !== secondDate) {
-    return (firstDate - secondDate) * direction
-  }
-
-  const firstTime = Date.parse(firstValue)
-  const secondTime = Date.parse(secondValue)
-
-  if (Number.isFinite(firstTime) && Number.isFinite(secondTime)) {
-    return (firstTime - secondTime) * direction
-  }
-
-  const firstNumber = Number(firstValue)
-  const secondNumber = Number(secondValue)
-
-  if (Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) {
-    return (firstNumber - secondNumber) * direction
-  }
-
-  return String(firstValue).localeCompare(String(secondValue)) * direction
-}
-
 function Overview({ user }) {
   const [activeView, setActiveView] = useState(() => {
     const savedView = window.localStorage.getItem(activeViewStorageKey)
     return savedView === 'users' ? 'students' : savedView === 'teachers' ? 'overview' : dashboardViews.includes(savedView) ? savedView : 'overview'
   })
   const [isSignOutOpen, setIsSignOutOpen] = useState(false)
+  const [isNavOpen, setIsNavOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isNavOpen) return undefined
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsNavOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isNavOpen])
   const [records, setRecords] = useState([])
   const [isRecordsLoading, setIsRecordsLoading] = useState(false)
   const [recordsError, setRecordsError] = useState('')
@@ -147,7 +126,7 @@ function Overview({ user }) {
           let count = 0
           let totalQuestionsAnswered = 0
           let totalRecords = 0
-          const students = new Map()
+          const studentsMap = new Map()
           const pageSize = 1000
 
           for (let offset = 0; ; offset += pageSize) {
@@ -168,14 +147,14 @@ function Overview({ user }) {
 
                 const userId = record.user === null || record.user === undefined ? '' : String(record.user)
                 if (userId) {
-                  const student = students.get(userId) ?? {
+                  const student = studentsMap.get(userId) ?? {
                     name: [record.profile?.first_name, record.profile?.last_name].filter(Boolean).join(' ') || userId,
                     total: 0,
                     count: 0,
                   }
                   student.total += value
                   student.count += 1
-                  students.set(userId, student)
+                  studentsMap.set(userId, student)
                 }
               }
 
@@ -192,7 +171,7 @@ function Overview({ user }) {
             average: count ? total / count : null,
             totalQuestionsAnswered,
             totalRecords,
-            students: Array.from(students, ([id, student]) => ({
+            students: Array.from(studentsMap, ([id, student]) => ({
               id,
               name: student.name,
               average: student.total / student.count,
@@ -385,7 +364,7 @@ function Overview({ user }) {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
-      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to add a student.')
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to add a user.')
 
       const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
         method: 'POST',
@@ -403,14 +382,14 @@ function Overview({ user }) {
       const responseData = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(responseData?.message || responseData?.error || `Unable to add student (${response.status}).`)
+        throw new Error(responseData?.message || responseData?.error || `Unable to add user (${response.status}).`)
       }
 
       setIsAddStudentOpen(false)
       setNewStudent({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
       setStudentsRefreshKey((currentKey) => currentKey + 1)
     } catch (error) {
-      setCreateStudentError(error.message || 'Unable to add student.')
+      setCreateStudentError(error.message || 'Unable to add user.')
     } finally {
       setIsCreatingStudent(false)
     }
@@ -421,7 +400,7 @@ function Overview({ user }) {
     setUpdateStudentError('')
 
     if (!selectedProfileUuid) {
-      setUpdateStudentError('Select a student to edit.')
+      setUpdateStudentError('Select a user to edit.')
       return
     }
 
@@ -449,7 +428,7 @@ function Overview({ user }) {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
-      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to edit a student.')
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to edit a user.')
 
       const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
         method: 'PATCH',
@@ -463,7 +442,7 @@ function Overview({ user }) {
       const responseData = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(responseData?.message || responseData?.error || `Unable to update student (${response.status}).`)
+        throw new Error(responseData?.message || responseData?.error || `Unable to update user (${response.status}).`)
       }
 
       setIsEditStudentOpen(false)
@@ -471,7 +450,7 @@ function Overview({ user }) {
       setEditStudentFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
       setStudentsRefreshKey((currentKey) => currentKey + 1)
     } catch (error) {
-      setUpdateStudentError(error.message || 'Unable to update student.')
+      setUpdateStudentError(error.message || 'Unable to update user.')
     } finally {
       setIsUpdatingStudent(false)
     }
@@ -482,11 +461,11 @@ function Overview({ user }) {
     setDeleteStudentError('')
 
     if (!selectedDeleteProfileUuid) {
-      setDeleteStudentError('Select a student to delete.')
+      setDeleteStudentError('Select a user to delete.')
       return
     }
     if (!isDeleteConfirmed) {
-      setDeleteStudentError('Confirm that you want to permanently delete this student.')
+      setDeleteStudentError('Confirm that you want to permanently delete this user.')
       return
     }
 
@@ -495,7 +474,7 @@ function Overview({ user }) {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
-      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to delete a student.')
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to delete a user.')
 
       const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
         method: 'DELETE',
@@ -509,7 +488,7 @@ function Overview({ user }) {
       const responseData = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(responseData?.message || responseData?.error || `Unable to delete student (${response.status}).`)
+        throw new Error(responseData?.message || responseData?.error || `Unable to delete user (${response.status}).`)
       }
 
       setIsDeleteStudentOpen(false)
@@ -517,18 +496,13 @@ function Overview({ user }) {
       setIsDeleteConfirmed(false)
       setStudentsRefreshKey((currentKey) => currentKey + 1)
     } catch (error) {
-      setDeleteStudentError(error.message || 'Unable to delete student.')
+      setDeleteStudentError(error.message || 'Unable to delete user.')
     } finally {
       setIsDeletingStudent(false)
     }
   }
 
-  const recordColumns = records.reduce((allColumns, record) => {
-    Object.keys(record).forEach((column) => {
-      if (!allColumns.includes(column)) allColumns.push(column)
-    })
-    return allColumns
-  }, [])
+  const recordColumns = getColumns(records)
 
   const sortedRecords = sort
     ? [...records].sort((firstRecord, secondRecord) => {
@@ -571,30 +545,55 @@ function Overview({ user }) {
     <main className="dashboard-page">
       <div className="dashboard-shell">
         <aside className="dashboard-sidebar">
-          <img className="dashboard-brand-logo" src={hiwagaLogo} alt="Hiwaga" />
-          <nav className="dashboard-navigation" aria-label="Dashboard navigation">
-            {[
-              { id: 'overview', label: 'Overview' },
-              { id: 'leaderboard', label: 'Leaderboard' },
-              { id: 'records', label: 'Records' },
-              { id: 'questions', label: 'Questions' },
-              { id: 'students', label: 'Students' },
-              ...(profileRole === 'superadmin' ? [{ id: 'teachers', label: 'Teachers' }] : []),
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                className="dashboard-navigation-link"
-                type="button"
-                aria-current={activeView === id ? 'page' : undefined}
-                onClick={() => setActiveView(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-          <button className="sign-out-button" type="button" onClick={() => setIsSignOutOpen(true)}>
-            Sign out
-          </button>
+          <div className="dashboard-sidebar-header">
+            <img className="dashboard-brand-logo" src={hiwagaLogo} alt="Hiwaga" />
+            <button
+              className={`mobile-nav-toggle ${isNavOpen ? 'is-open' : ''}`}
+              type="button"
+              aria-label={isNavOpen ? 'Close dashboard menu' : 'Open dashboard menu'}
+              aria-expanded={isNavOpen}
+              onClick={() => setIsNavOpen((prev) => !prev)}
+            >
+              <span className="hamburger-bar" />
+              <span className="hamburger-bar" />
+              <span className="hamburger-bar" />
+            </button>
+          </div>
+          <div className={`dashboard-sidebar-content ${isNavOpen ? 'is-open' : ''}`}>
+            <nav className="dashboard-navigation" aria-label="Dashboard navigation">
+              {[
+                { id: 'overview', label: 'Overview' },
+                { id: 'leaderboard', label: 'Leaderboard' },
+                { id: 'records', label: 'Records' },
+                { id: 'questions', label: 'Questions' },
+                { id: 'students', label: 'Students' },
+                ...(profileRole === 'superadmin' ? [{ id: 'teachers', label: 'Teachers' }] : []),
+              ].map(({ id, label }) => (
+                <button
+                  key={id}
+                  className="dashboard-navigation-link"
+                  type="button"
+                  aria-current={activeView === id ? 'page' : undefined}
+                  onClick={() => {
+                    setActiveView(id)
+                    setIsNavOpen(false)
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <button
+              className="sign-out-button"
+              type="button"
+              onClick={() => {
+                setIsNavOpen(false)
+                setIsSignOutOpen(true)
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </aside>
 
         {isSignOutOpen && (
@@ -675,16 +674,16 @@ function Overview({ user }) {
                   </section>
                 </div>
                 <section className="student-score-lists" aria-label="Students by average score">
-                  {studentLists.map(({ title, threshold, students }) => (
+                  {studentLists.map(({ title, threshold, students: scoreStudents }) => (
                     <section className="student-score-list" key={title}>
                       <h2>{title} <span className="student-score-threshold">{threshold}</span></h2>
                       {isOverviewLoading ? (
                         <p className="student-score-empty">Loading students...</p>
-                      ) : students.length === 0 ? (
+                      ) : scoreStudents.length === 0 ? (
                         <p className="student-score-empty">No students</p>
                       ) : (
                         <ul>
-                          {students.map(({ id, name, average }) => (
+                          {scoreStudents.map(({ id, name, average }) => (
                             <li key={id}>
                               <span>{name}</span>
                               <strong>{average.toFixed(1)}</strong>

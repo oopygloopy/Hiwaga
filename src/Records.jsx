@@ -1,29 +1,9 @@
 import { lazy, Suspense, useState } from 'react'
 import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
+import { formatCell, getColumns } from './utils/formatters'
 
 const OverallStats = lazy(() => import('./charts/overallstats.jsx'))
-
-const formatCell = (value) => {
-  if (value === null || value === undefined) {
-    return '-'
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(value)
-  }
-
-  return String(value)
-}
-
-const getColumns = (rows) => rows.reduce((allColumns, row) => {
-  Object.keys(row).forEach((column) => {
-    if (!allColumns.includes(column)) {
-      allColumns.push(column)
-    }
-  })
-  return allColumns
-}, [])
 
 export default function Records({
   records,
@@ -195,7 +175,7 @@ export default function Records({
                 rowCount={filteredRecords.length}
                 onPageChange={setCurrentPage}
               />
-              <DataTable rows={pageRecords} />
+              <DataTable rows={pageRecords} excludeColumns={['Grade']} />
             </>
           ) : <p>No records match the selected filters.</p>}
         </>

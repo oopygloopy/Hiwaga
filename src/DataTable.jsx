@@ -1,41 +1,34 @@
-const formatCell = (value) => {
-  if (value === null || value === undefined) {
-    return '-'
-  }
+import { formatCell, getColumns } from './utils/formatters'
 
-  if (typeof value === 'object') {
-    return JSON.stringify(value)
-  }
-
-  return String(value)
-}
-
-const getColumns = (rows) => rows.reduce((allColumns, row) => {
-  Object.keys(row).forEach((column) => {
-    if (!allColumns.includes(column)) {
-      allColumns.push(column)
-    }
-  })
-  return allColumns
-}, [])
-
-export default function DataTable({ rows, columns: visibleColumns }) {
-  const columns = visibleColumns ?? getColumns(rows).filter((column) => column !== 'Grade')
+export default function DataTable({ rows = [], columns: visibleColumns, excludeColumns = [] }) {
+  const columns = visibleColumns ?? getColumns(rows, excludeColumns)
 
   return (
     <div className="records-table-wrapper">
       <table className="records-table">
         <thead>
           <tr>
-            {columns.map((column) => <th key={column}>{column}</th>)}
+            {columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.id ?? index}>
-              {columns.map((column) => <td key={column}>{formatCell(row[column])}</td>)}
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={Math.max(1, columns.length)} className="records-table-empty">
+                No entries to display.
+              </td>
             </tr>
-          ))}
+          ) : (
+            rows.map((row, index) => (
+              <tr key={row.id ?? index}>
+                {columns.map((column) => (
+                  <td key={column}>{formatCell(row[column])}</td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

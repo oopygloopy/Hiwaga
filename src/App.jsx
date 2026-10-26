@@ -19,6 +19,16 @@ function App() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const [isNavOpen, setIsNavOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isNavOpen) return undefined
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setIsNavOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isNavOpen])
 
   useEffect(() => {
     let isMounted = true
@@ -131,16 +141,40 @@ function App() {
   return (
     <main className="welcome-page">
       <header className="welcome-toolbar">
-        <nav className="welcome-navigation" aria-label="Main navigation">
-          <img className="welcome-school-icon" src={einsteinIcon} alt="Little Einstein Discovery School" />
-          <a href="#home">Home</a>
-          <a href="#about-us">About Us</a>
-          <a href="#faq">FAQ</a>
-          <a href="#contact">Contact</a>
-        </nav>
-        <button className="login-trigger" type="button" onClick={() => setIsLoginOpen(true)}>
-          Login
-        </button>
+        <div className="welcome-toolbar-brand">
+          <a href="#home" aria-label="Go to top of page">
+            <img className="welcome-school-icon" src={einsteinIcon} alt="Little Einstein Discovery School" />
+          </a>
+          <button
+            className={`mobile-nav-toggle ${isNavOpen ? 'is-open' : ''}`}
+            type="button"
+            aria-label={isNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={isNavOpen}
+            onClick={() => setIsNavOpen((prev) => !prev)}
+          >
+            <span className="hamburger-bar" />
+            <span className="hamburger-bar" />
+            <span className="hamburger-bar" />
+          </button>
+        </div>
+        <div className={`welcome-nav-menu ${isNavOpen ? 'is-open' : ''}`}>
+          <nav className="welcome-navigation" aria-label="Main navigation">
+            <a href="#home" onClick={() => setIsNavOpen(false)}>Home</a>
+            <a href="#about-us" onClick={() => setIsNavOpen(false)}>About Us</a>
+            <a href="#faq" onClick={() => setIsNavOpen(false)}>FAQ</a>
+            <a href="#contact" onClick={() => setIsNavOpen(false)}>Contact</a>
+          </nav>
+          <button
+            className="login-trigger"
+            type="button"
+            onClick={() => {
+              setIsNavOpen(false)
+              setIsLoginOpen(true)
+            }}
+          >
+            Login
+          </button>
+        </div>
       </header>
 
       <section className="welcome-section home-section" id="home" aria-labelledby="welcome-title">

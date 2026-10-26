@@ -1,21 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import PaginationControls from './PaginationControls.jsx'
-
-const formatAverage = (value, suffix = '') => (
-  Number.isFinite(value) ? `${value.toFixed(1)}${suffix}` : '-'
-)
-
-const formatStudentName = (profile, fallback) => {
-  const firstName = profile?.first_name?.trim()
-  const lastName = profile?.last_name?.trim()
-  const middleInitial = profile?.middle_name?.trim()?.[0]
-  const name = [lastName, firstName && `${firstName}${middleInitial ? ` ${middleInitial}.` : ''}`]
-    .filter(Boolean)
-    .join(', ')
-
-  return name || fallback
-}
+import { formatAverage, getProfileLabel } from './utils/formatters'
 
 export default function Leaderboard() {
   const [students, setStudents] = useState([])
@@ -46,7 +32,7 @@ export default function Leaderboard() {
             const userId = String(record.user)
             const student = studentsByUser.get(userId) ?? {
               id: userId,
-              name: formatStudentName(record.profile, userId),
+              name: getProfileLabel(record.profile, userId),
               gradeTotal: 0,
               gradeCount: 0,
               timeTotal: 0,
@@ -78,8 +64,10 @@ export default function Leaderboard() {
           averageGrade: student.gradeCount ? student.gradeTotal / student.gradeCount : null,
           averageTime: student.timeCount ? student.timeTotal / student.timeCount : null,
         })))
-      } catch (loadError) {
-        if (isMounted) setError(loadError.message || 'Unable to load leaderboard.')
+      } catch (queryError) {
+        if (!isMounted) return
+        setError(queryError?.message || 'Unable to load leaderboard.')
+        setStudents([])
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -92,16 +80,28 @@ export default function Leaderboard() {
     }
   }, [])
 
-  const sortedStudents = [...students].sort((first, second) => {
-    const firstValue = sortBy === 'grade' ? first.averageGrade : first.averageTime
-    const secondValue = sortBy === 'grade' ? second.averageGrade : second.averageTime
+  const sortedStudents = [...students].sort((firstStudent, secondStudent) => {
+    if (sortBy === 'time') {
+      const firstTime = firstStudent.averageTime
+      const secondTime = secondStudent.averageTime
 
-    if (firstValue === null) return secondValue === null ? first.name.localeCompare(second.name) : 1
-    if (secondValue === null) return -1
+      if (firstTime === null && secondTime === null) return 0
+      if (firstTime === null) return 1
+      if (secondTime === null) return -1
 
-    return (sortBy === 'grade' ? secondValue - firstValue : firstValue - secondValue)
-      || first.name.localeCompare(second.name)
+      return firstTime - secondTime
+    }
+
+    const firstGrade = firstStudent.averageGrade
+    const secondGrade = secondStudent.averageGrade
+
+    if (firstGrade === null && secondGrade === null) return 0
+    if (firstGrade === null) return 1
+    if (secondGrade === null) return -1
+
+    return secondGrade - firstGrade
   })
+
   const pageCount = Math.max(1, Math.ceil(sortedStudents.length / 10))
   const page = Math.min(currentPage, pageCount)
   const pageStudents = sortedStudents.slice((page - 1) * 10, page * 10)
@@ -109,7 +109,7 @@ export default function Leaderboard() {
   return (
     <div className="dashboard-content">
       <p className="view-hint">Ranking of users using their average from all records played.</p>
-      <div className="records-sort-controls" role="group" aria-label="Sort leaderboard">
+      <div className="records-sort-controls">
         <button
           type="button"
           aria-pressed={sortBy === 'grade'}

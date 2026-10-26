@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import PaginationControls from './PaginationControls.jsx'
-
-const formatCell = (value) => {
-  if (value === null || value === undefined) return '-'
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
-}
+import { formatCell } from './utils/formatters'
 
 const columnLabels = {
   question: 'Question',
@@ -106,57 +101,64 @@ export default function Questions() {
       return
     }
 
-    const query = dialog === 'add'
-      ? supabase.from('questions').insert(questionData).select().single()
-      : supabase.from('questions').update(questionData).eq('id', selectedQuestionId).select().single()
-    const { data, error: mutationQueryError } = await query
+    try {
+      if (dialog === 'add') {
+        const { error: insertError } = await supabase.from('questions').insert([questionData])
+        if (insertError) throw insertError
+      } else if (dialog === 'edit') {
+        const { error: updateError } = await supabase
+          .from('questions')
+          .update(questionData)
+          .eq('id', selectedQuestionId)
+        if (updateError) throw updateError
+      }
 
-    if (mutationQueryError) {
-      setMutationError(mutationQueryError.message)
+      const { data: updatedQuestions, error: reloadError } = await supabase.from('questions').select('*')
+      if (reloadError) throw reloadError
+
+      setQuestions(updatedQuestions ?? [])
+      closeDialog()
+    } catch (saveError) {
+      setMutationError(saveError?.message || 'Unable to save question.')
+    } finally {
       setIsMutating(false)
-      return
     }
-
-    if (dialog === 'add') {
-      setQuestions((currentQuestions) => [...currentQuestions, data])
-      setCurrentPage(Math.ceil((questions.length + 1) / 10))
-    } else {
-      setQuestions((currentQuestions) => currentQuestions.map((question) => (
-        String(question.id) === selectedQuestionId ? data : question
-      )))
-    }
-
-    setIsMutating(false)
-    closeDialog()
   }
 
   const handleDeleteQuestion = async (event) => {
     event.preventDefault()
-    setMutationError('')
-    setIsMutating(true)
-
-    const { error: mutationQueryError } = await supabase
-      .from('questions')
-      .delete()
-      .eq('id', selectedQuestionId)
-
-    if (mutationQueryError) {
-      setMutationError(mutationQueryError.message)
-      setIsMutating(false)
+    if (!selectedQuestionId) {
+      setMutationError('Select a question to delete.')
+      return
+    }
+    if (!isDeleteConfirmed) {
+      setMutationError('Please confirm deletion.')
       return
     }
 
-    setQuestions((currentQuestions) => currentQuestions.filter((question) => (
-      String(question.id) !== selectedQuestionId
-    )))
-    setIsMutating(false)
-    closeDialog()
+    setMutationError('')
+    setIsMutating(true)
+
+    try {
+      const { error: deleteError } = await supabase.from('questions').delete().eq('id', selectedQuestionId)
+      if (deleteError) throw deleteError
+
+      const { data: updatedQuestions, error: reloadError } = await supabase.from('questions').select('*')
+      if (reloadError) throw reloadError
+
+      setQuestions(updatedQuestions ?? [])
+      closeDialog()
+    } catch (removeError) {
+      setMutationError(removeError?.message || 'Unable to delete question.')
+    } finally {
+      setIsMutating(false)
+    }
   }
 
   return (
     <div className="dashboard-content">
-      <p className="view-hint">Questions here are used within the game's free play mode.</p>
-      <div className="management-toolbar">
+      <p className="view-hint">Manages the questions used within the Hiwaga mobile game.</p>
+      <div className="users-view-toolbar">
         <div className="user-management-actions">
           <button className="add-user-button" type="button" onClick={() => {
             setMutationError('')

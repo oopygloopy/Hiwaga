@@ -29,6 +29,9 @@ export default function DataTable({ rows = [], columns: visibleColumns, excludeC
                     const num = typeof value === 'number' ? value : Number.parseFloat(String(value).replace('%', ''))
                     if (Number.isFinite(num)) {
                       const color = num >= 75 ? '#2f9e44' : num >= 50 ? '#d97706' : '#e03131'
+                      const label = Number.isFinite(row.rawCorrect) && Number.isFinite(row.rawTotal)
+                        ? `${row.rawCorrect}/${row.rawTotal} (${num.toFixed(1)}%)`
+                        : `${num.toFixed(1)}%`
                       return (
                         <td key={column}>
                           <span
@@ -43,7 +46,7 @@ export default function DataTable({ rows = [], columns: visibleColumns, excludeC
                               border: `1px solid ${color}40`,
                             }}
                           >
-                            {num.toFixed(1)}%
+                            {label}
                           </span>
                         </td>
                       )

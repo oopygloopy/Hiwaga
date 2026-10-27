@@ -173,7 +173,7 @@ export default function Records({
                 rowCount={filteredRecords.length}
                 onPageChange={setCurrentPage}
               />
-              <DataTable rows={pageRecords} excludeColumns={['rawScore', 'rawTimestamp']} />
+              <DataTable rows={pageRecords} excludeColumns={['rawScore', 'rawTimestamp', 'rawCorrect', 'rawTotal']} />
             </>
           ) : <p>No records match the selected filters.</p>}
         </>

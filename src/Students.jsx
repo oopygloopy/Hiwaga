@@ -57,22 +57,6 @@ export default function Students({
     <div className="dashboard-content">
       <p className="view-hint">Lists the name, section, and the last activity of every student.</p>
       <div className="management-toolbar">
-        <div className="overall-stats-controls">
-          <label htmlFor="students-section-filter">Section</label>
-          <select
-            id="students-section-filter"
-            value={selectedSection}
-            onChange={(event) => {
-              setSelectedSection(event.target.value)
-              setCurrentPage(1)
-            }}
-          >
-            <option value="">All sections</option>
-            {sections.map(({ id, section_name }) => (
-              <option key={id} value={section_name}>{section_name}</option>
-            ))}
-          </select>
-        </div>
         <div className="user-management-actions">
           <button className="add-user-button" type="button" onClick={() => {
             setCreateStudentError('')
@@ -97,6 +81,22 @@ export default function Students({
             Delete student
           </button>
         </div>
+      </div>
+      <div className="overall-stats-controls">
+        <label htmlFor="students-section-filter">Section</label>
+        <select
+          id="students-section-filter"
+          value={selectedSection}
+          onChange={(event) => {
+            setSelectedSection(event.target.value)
+            setCurrentPage(1)
+          }}
+        >
+          <option value="">All sections</option>
+          {sections.map(({ id, section_name }) => (
+            <option key={id} value={section_name}>{section_name}</option>
+          ))}
+        </select>
       </div>
 
       {isStudentsLoading && <p>Loading students...</p>}

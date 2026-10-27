@@ -348,7 +348,7 @@ function Overview({ user }) {
       setRecordsError('')
       const { data, error } = await supabase
         .from('records')
-        .select('record_id, corr_percent, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
+        .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
         .order('finished_at', { ascending: false })
 
       if (!isMounted) {
@@ -364,6 +364,8 @@ function Overview({ user }) {
           const dateStr = finishedDate ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(finishedDate) : '-'
           const timeStr = finishedDate ? new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(finishedDate) : '-'
           const scoreVal = r.corr_percent !== null && r.corr_percent !== undefined ? Number(r.corr_percent) : null
+          const totalQ = r.total_question !== null && r.total_question !== undefined ? Number(r.total_question) : null
+          const correctCount = r.correct_ans !== null && r.correct_ans !== undefined ? Number(r.correct_ans) : null
 
           return {
             id: r.record_id,
@@ -371,6 +373,8 @@ function Overview({ user }) {
             Chapter: r.chapter !== null && r.chapter !== undefined ? String(r.chapter) : '-',
             Score: scoreVal !== null ? `${scoreVal.toFixed(1)}%` : '-',
             rawScore: scoreVal,
+            rawCorrect: correctCount,
+            rawTotal: totalQ,
             Time: timeStr,
             Date: dateStr,
             'Duration (s)': r.time_elapsed_sec ?? '-',
@@ -400,7 +404,7 @@ function Overview({ user }) {
       setRecentActivityError('')
       const { data, error } = await supabase
         .from('records')
-        .select('record_id, corr_percent, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
+        .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
         .order('finished_at', { ascending: false })
         .limit(5)
 
@@ -883,6 +887,8 @@ function Overview({ user }) {
                       <div className="activity-feed">
                         {recentActivityRecords.map((item) => {
                           const score = item.corr_percent !== null && item.corr_percent !== undefined ? Number(item.corr_percent) : null
+                          const totalQ = item.total_question !== null && item.total_question !== undefined ? Number(item.total_question) : null
+                          const correctCount = item.correct_ans !== null && item.correct_ans !== undefined ? Number(item.correct_ans) : null
                           const scoreColor = score !== null ? (score >= 75 ? '#2f9e44' : score >= 50 ? '#d97706' : '#e03131') : 'var(--text)'
                           const name = getProfileLabel(item.profile, String(item.user ?? 'Student'))
                           const initials = name.split(' ').map((n) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'S'
@@ -909,7 +915,11 @@ function Overview({ user }) {
                                 className="activity-feed-score"
                                 style={{ backgroundColor: `${scoreColor}18`, color: scoreColor, borderColor: `${scoreColor}40` }}
                               >
-                                {score !== null ? `${score.toFixed(0)}%` : '-'}
+                                {score !== null
+                                  ? correctCount !== null
+                                    ? `${correctCount}/${totalQ} (${score.toFixed(0)}%)`
+                                    : `${score.toFixed(0)}%`
+                                  : '-'}
                               </div>
                             </div>
                           )

@@ -182,10 +182,12 @@ function App() {
           <h1 id="welcome-title" className="home-title">
             <img src={hiwagaLogo} alt="Hiwaga" />
           </h1>
-          <p className="welcome-kicker">A journey through Philippine history</p>
-          <p className="welcome-description">
-            Venture through the world of "Hiwaga", and learn about the history of the Philippines through an immersive world and engaging turn-based gameplay. Battle through time against enemies using the power of knowledge!
-          </p>
+          <div className="home-glass-card">
+            <p className="welcome-kicker">A journey through Philippine history</p>
+            <p className="welcome-description">
+              Venture through the world of "Hiwaga", and learn about the history of the Philippines through an immersive world and engaging turn-based gameplay. Battle through time against enemies using the power of knowledge!
+            </p>
+          </div>
         </div>
       </section>
 

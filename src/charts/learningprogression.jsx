@@ -32,7 +32,7 @@ export default function LearningProgression({ data = [], isLoading = false }) {
     <section className="daily-records-section" aria-labelledby="learning-progression-title">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
         <h2 id="learning-progression-title" style={{ margin: 0 }}>Learning Progression by Chapter</h2>
-        <span style={{ fontSize: '12px', color: 'var(--text)' }}>First Attempt vs. Latest Attempt</span>
+        <span style={{ fontSize: '14px', color: 'var(--text)' }}>First Attempt vs. Latest Attempt</span>
       </div>
       <div className="daily-records-chart" role="img" aria-label="First attempt vs latest attempt by chapter">
         <ResponsiveContainer width="100%" height="100%">

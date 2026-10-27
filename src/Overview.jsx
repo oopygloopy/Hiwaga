@@ -2,8 +2,6 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import hiwagaLogo from './assets/hiwagalogo.png'
 import {
-  compareRecordsByTime,
-  getColumns,
   getProfileLabel,
   getProfileUuid,
 } from './utils/formatters'
@@ -34,9 +32,6 @@ function Overview({ user }) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isNavOpen])
-  const [records, setRecords] = useState([])
-  const [isRecordsLoading, setIsRecordsLoading] = useState(false)
-  const [recordsError, setRecordsError] = useState('')
   const [recentActivityRecords, setRecentActivityRecords] = useState([])
   const [isRecentActivityLoading, setIsRecentActivityLoading] = useState(true)
   const [recentActivityError, setRecentActivityError] = useState('')
@@ -95,7 +90,6 @@ function Overview({ user }) {
   const [isOverviewLoading, setIsOverviewLoading] = useState(true)
   const [overviewError, setOverviewError] = useState('')
   const [studentAverages, setStudentAverages] = useState([])
-  const [sort, setSort] = useState({ column: 'Time', direction: -1 })
   const [scoreXAxis, setScoreXAxis] = useState('attempt')
 
   useEffect(() => {
@@ -337,62 +331,6 @@ function Overview({ user }) {
       isMounted = false
     }
   }, [])
-
-  useEffect(() => {
-    if (activeView !== 'records') return undefined
-
-    let isMounted = true
-
-    const loadRecords = async () => {
-      setIsRecordsLoading(true)
-      setRecordsError('')
-      const { data, error } = await supabase
-        .from('records')
-        .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
-        .order('finished_at', { ascending: false })
-
-      if (!isMounted) {
-        return
-      }
-
-      if (error) {
-        setRecordsError(error.message)
-      } else {
-        const formatted = (data ?? []).map((r) => {
-          const name = getProfileLabel(r.profile, String(r.user ?? ''))
-          const finishedDate = r.finished_at ? new Date(r.finished_at) : null
-          const dateStr = finishedDate ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(finishedDate) : '-'
-          const timeStr = finishedDate ? new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(finishedDate) : '-'
-          const scoreVal = r.corr_percent !== null && r.corr_percent !== undefined ? Number(r.corr_percent) : null
-          const totalQ = r.total_question !== null && r.total_question !== undefined ? Number(r.total_question) : null
-          const correctCount = r.correct_ans !== null && r.correct_ans !== undefined ? Number(r.correct_ans) : null
-
-          return {
-            id: r.record_id,
-            Name: name,
-            Chapter: r.chapter !== null && r.chapter !== undefined ? String(r.chapter) : '-',
-            Score: scoreVal !== null ? `${scoreVal.toFixed(1)}%` : '-',
-            rawScore: scoreVal,
-            rawCorrect: correctCount,
-            rawTotal: totalQ,
-            Time: timeStr,
-            Date: dateStr,
-            'Duration (s)': r.time_elapsed_sec ?? '-',
-            rawTimestamp: r.finished_at ? Date.parse(r.finished_at) : 0,
-          }
-        })
-        setRecords(formatted)
-      }
-
-      setIsRecordsLoading(false)
-    }
-
-    loadRecords()
-
-    return () => {
-      isMounted = false
-    }
-  }, [activeView])
 
   useEffect(() => {
     if (activeView !== 'overview') return undefined
@@ -669,41 +607,6 @@ function Overview({ user }) {
     }
   }
 
-  const recordColumns = getColumns(records)
-
-  const sortedRecords = sort
-    ? [...records].sort((firstRecord, secondRecord) => {
-      const sortColumn = sort.column === 'alphabetical' ? recordColumns[0] : sort.column
-      const firstValue = firstRecord[sortColumn]
-      const secondValue = secondRecord[sortColumn]
-
-      if (sortColumn === 'Time' || sortColumn === 'Date') {
-        if (firstRecord.rawTimestamp && secondRecord.rawTimestamp) {
-          return (firstRecord.rawTimestamp - secondRecord.rawTimestamp) * sort.direction
-        }
-        return compareRecordsByTime(firstRecord, secondRecord, sort.direction)
-      }
-
-      if (sortColumn === 'Score' || sortColumn === 'Grade') {
-        const valA = firstRecord.rawScore ?? -1
-        const valB = secondRecord.rawScore ?? -1
-        return (valA - valB) * sort.direction
-      }
-
-      if (firstValue === null || firstValue === undefined) return 1
-      if (secondValue === null || secondValue === undefined) return -1
-
-      const firstNumber = Number(firstValue)
-      const secondNumber = Number(secondValue)
-
-      if (Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) {
-        return (firstNumber - secondNumber) * sort.direction
-      }
-
-      return String(firstValue).localeCompare(String(secondValue)) * sort.direction
-    })
-    : records
-
   const filteredStudents = selectedSection
     ? students.filter((student) => String(student.Section ?? '') === selectedSection)
     : students
@@ -957,14 +860,8 @@ function Overview({ user }) {
 
           {activeView === 'records' && (
             <Records
-              records={records}
-              sort={sort}
-              setSort={setSort}
               scoreXAxis={scoreXAxis}
               setScoreXAxis={setScoreXAxis}
-              isRecordsLoading={isRecordsLoading}
-              recordsError={recordsError}
-              sortedRecords={sortedRecords}
             />
           )}
 

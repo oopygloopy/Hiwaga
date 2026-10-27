@@ -1,25 +1,24 @@
-# Graph Report - Hiwaga-Capstone  (2026-10-26)
+# Graph Report - Hiwaga-Capstone  (2026-10-27)
 
 ## Corpus Check
-- 61 files · ~20,283 words
+- 62 files · ~21,967 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 4 file(s) not represented in the graph (top: .css 2, .example 1, (none) 1)
 
 ## Summary
-- 252 nodes · 339 edges · 44 communities (11 shown, 33 thin omitted)
+- 253 nodes · 342 edges · 43 communities (10 shown, 33 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `687805a1`
+- Built from commit: `c69b8f55`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - package.json
-- react
 - Overview.jsx
-- scripts
+- Overview.jsx
 - Supabase
 - Changelog
 - Changelog
@@ -63,48 +62,44 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `react` - 12 edges
-2. `Overview()` - 12 edges
-3. `DataTable()` - 11 edges
-4. `PaginationControls()` - 11 edges
-5. `Section Definitions` - 9 edges
-6. `Records()` - 8 edges
-7. `getProfileLabel()` - 8 edges
-8. `Supabase` - 8 edges
-9. `UserModals()` - 7 edges
-10. `formatCell()` - 7 edges
+2. `Overview()` - 11 edges
+3. `PaginationControls()` - 11 edges
+4. `DataTable()` - 9 edges
+5. `Records()` - 9 edges
+6. `Section Definitions` - 9 edges
+7. `UserModals()` - 8 edges
+8. `getProfileLabel()` - 8 edges
+9. `Supabase` - 8 edges
+10. `SearchableSelect()` - 7 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Leaderboard()` --calls--> `PaginationControls()`  [EXTRACTED]
+  src/Leaderboard.jsx → src/PaginationControls.jsx
+- `Overview()` --calls--> `getColumns()`  [EXTRACTED]
+  src/Overview.jsx → src/utils/formatters.js
+- `UserModals()` --calls--> `getProfileLabel()`  [EXTRACTED]
+  src/UserModals.jsx → src/utils/formatters.js
+- `UserModals()` --calls--> `getProfileUuid()`  [EXTRACTED]
+  src/UserModals.jsx → src/utils/formatters.js
 - `DataTable()` --calls--> `formatCell()`  [EXTRACTED]
   src/DataTable.jsx → src/utils/formatters.js
-- `DataTable()` --calls--> `getColumns()`  [EXTRACTED]
-  src/DataTable.jsx → src/utils/formatters.js
-- `Overview()` --calls--> `DataTable()`  [EXTRACTED]
-  src/Overview.jsx → src/DataTable.jsx
-- `Records()` --calls--> `DataTable()`  [EXTRACTED]
-  src/Records.jsx → src/DataTable.jsx
-- `Students()` --calls--> `DataTable()`  [EXTRACTED]
-  src/Students.jsx → src/DataTable.jsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (44 total, 33 thin omitted)
+## Communities (43 total, 33 thin omitted)
 
 ### Community 0 - "package.json"
-Cohesion: 0.08
-Nodes (33): dependencies, jspdf@^4.2.1, jspdf-autotable@^5.0.8, react@^19.2.8, react-dom@^19.2.8, @supabase/supabase-js@^2.116.0, devDependencies, eslint@^10.10.0 (+25 more)
+Cohesion: 0.07
+Nodes (40): dependencies, jspdf@^4.2.1, jspdf-autotable@^5.0.8, react@^19.2.8, react-dom@^19.2.8, recharts@^3.10.1, @supabase/supabase-js@^2.116.0, devDependencies (+32 more)
 
-### Community 1 - "react"
+### Community 1 - "Overview.jsx"
 Cohesion: 0.14
-Nodes (9): recharts@^3.10.1, recharts, App(), Overview, getScoreColor(), OverallStats(), formatDay(), PlayCount() (+1 more)
+Nodes (16): App(), Overview, Leaderboard(), dashboardViews, Leaderboard, LearningProgression, Overview(), Questions (+8 more)
 
 ### Community 2 - "Overview.jsx"
-Cohesion: 0.17
-Nodes (25): react, DataTable(), Leaderboard(), dashboardViews, Leaderboard, Overview(), PlayCount, Questions (+17 more)
-
-### Community 3 - "scripts"
-Cohesion: 0.40
-Nodes (5): scripts, build, dev, lint, preview
+Cohesion: 0.20
+Nodes (15): react, getScoreColor(), OverallStats(), DataTable(), PaginationControls(), columnLabels, Questions(), OverallStats (+7 more)
 
 ### Community 4 - "Supabase"
 Cohesion: 0.11
@@ -140,17 +135,17 @@ Nodes (3): Expanding the ESLint configuration, React Compiler, React + Vite
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `Overview.jsx` to `package.json`, `react`?**
-  _High betweenness centrality (0.059) - this node is a cross-community bridge._
+- **Why does `react` connect `Overview.jsx` to `package.json`, `Overview.jsx`?**
+  _High betweenness centrality (0.057) - this node is a cross-community bridge._
 - **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.08412698412698413 - nodes in this community are weakly interconnected._
-- **Why does `scripts` connect `scripts` to `package.json`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Should `react` be split into smaller, more focused modules?**
-  _Cohesion score 0.14210526315789473 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06755260243632337 - nodes in this community are weakly interconnected._
+- **Should `Overview.jsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.14039408866995073 - nodes in this community are weakly interconnected._
 - **Should `Supabase` be split into smaller, more focused modules?**
   _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._
 - **Should `Changelog` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `Changelog` be split into smaller, more focused modules?**
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
+- **Should `Writing Guidelines for Postgres References` be split into smaller, more focused modules?**
   _Cohesion score 0.125 - nodes in this community are weakly interconnected._

@@ -947,10 +947,20 @@
 }
 
 .overview-stat p {
+  margin: 0;
   color: var(--text-h);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.overview-stat-sub {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  opacity: 0.85;
 }
 
 .overview-activity-layout {
@@ -1628,3 +1638,473 @@
     gap: 12px;
   }
 }
+
+/* ==========================================================================
+   Searchable Select Component
+   ========================================================================== */
+.searchable-select-root {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 10px;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.searchable-select-control.is-open,
+.searchable-select-control:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.22);
+}
+
+.searchable-select-control.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchable-select-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  padding: 0;
+  cursor: inherit;
+}
+
+.searchable-select-input::placeholder {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.searchable-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.searchable-select-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.searchable-select-clear-btn:hover {
+  opacity: 1;
+  color: #e03131;
+}
+
+.searchable-select-chevron {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.searchable-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.searchable-select-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.searchable-select-item:hover {
+  background: rgba(65, 105, 225, 0.12);
+  color: var(--text-h);
+}
+
+.searchable-select-item.is-selected {
+  background: rgba(65, 105, 225, 0.18);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.searchable-select-item.is-empty {
+  color: var(--text);
+  font-style: italic;
+  cursor: default;
+  opacity: 0.7;
+}
+
+.overall-stats-user-filter .searchable-select-root {
+  min-width: 180px;
+  max-width: min(260px, 60vw);
+}
+
+/* ==========================================================================
+   Searchable Select Component
+   ========================================================================== */
+.searchable-select-root {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 10px;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.searchable-select-control.is-open,
+.searchable-select-control:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.22);
+}
+
+.searchable-select-control.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.searchable-select-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  padding: 0;
+  cursor: inherit;
+}
+
+.searchable-select-input::placeholder {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.searchable-select-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.searchable-select-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.searchable-select-clear-btn:hover {
+  opacity: 1;
+  color: #e03131;
+}
+
+.searchable-select-chevron {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.searchable-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.searchable-select-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.searchable-select-item:hover {
+  background: rgba(65, 105, 225, 0.12);
+  color: var(--text-h);
+}
+
+.searchable-select-item.is-selected {
+  background: rgba(65, 105, 225, 0.18);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.searchable-select-item.is-empty {
+  color: var(--text);
+  font-style: italic;
+  cursor: default;
+  opacity: 0.7;
+}
+
+.overall-stats-user-filter .searchable-select-root {
+  min-width: 180px;
+  max-width: min(260px, 60vw);
+}
+
+
+/* ==========================================================================
+   Activity Feed (Replaces raw Recent Activity table)
+   ========================================================================== */
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.activity-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(229, 251, 255, 0.2);
+  transition: all 0.16s ease;
+}
+
+.activity-feed-item:hover {
+  background: rgba(229, 251, 255, 0.45);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.activity-feed-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.03em;
+}
+
+.activity-feed-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-feed-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.activity-feed-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-feed-date {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.activity-feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.activity-feed-chapter {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.activity-feed-score {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+/* ==========================================================================
+   Activity Feed (Replaces raw Recent Activity table)
+   ========================================================================== */
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.activity-feed-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(229, 251, 255, 0.2);
+  transition: all 0.16s ease;
+}
+
+.activity-feed-item:hover {
+  background: rgba(229, 251, 255, 0.45);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.activity-feed-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.03em;
+}
+
+.activity-feed-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-feed-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.activity-feed-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-feed-date {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.activity-feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.activity-feed-chapter {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.activity-feed-score {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+

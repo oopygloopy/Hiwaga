@@ -220,8 +220,8 @@ export default function Questions() {
           <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby="question-dialog-title">
             <header className="add-user-dialog-header">
               <h2 id="question-dialog-title">{dialog === 'add' ? 'Add question' : 'Edit question'}</h2>
-              <button className="add-user-close" type="button" disabled={isMutating} onClick={closeDialog}>
-                Close
+              <button className="add-user-close" type="button" aria-label="Close dialog" disabled={isMutating} onClick={closeDialog}>
+                ×
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleSaveQuestion}>
@@ -293,8 +293,8 @@ export default function Questions() {
           <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-question-title">
             <header className="add-user-dialog-header">
               <h2 id="delete-question-title">Delete question</h2>
-              <button className="add-user-close" type="button" disabled={isMutating} onClick={closeDialog}>
-                Close
+              <button className="add-user-close" type="button" aria-label="Close dialog" disabled={isMutating} onClick={closeDialog}>
+                ×
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleDeleteQuestion}>

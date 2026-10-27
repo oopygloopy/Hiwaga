@@ -1,4 +1,5 @@
 import { getProfileLabel, getProfileUuid } from './utils/formatters'
+import SearchableSelect from './SearchableSelect.jsx'
 
 export default function UserModals({
   entityType = 'student',
@@ -55,7 +56,7 @@ export default function UserModals({
                 disabled={isCreating}
                 onClick={() => setIsAddOpen(false)}
               >
-                Close
+                ×
               </button>
             </header>
             <form className="add-user-form" onSubmit={onCreate}>
@@ -167,31 +168,26 @@ export default function UserModals({
                 disabled={isUpdating}
                 onClick={() => setIsEditOpen(false)}
               >
-                Close
+                ×
               </button>
             </header>
             <form className="add-user-form" onSubmit={onUpdate}>
               <div className="field-group edit-user-profile-select">
                 <label htmlFor={`edit-${entityType}-select`}>Select {entityType}</label>
-                <select
+                <SearchableSelect
                   id={`edit-${entityType}-select`}
+                  options={manageableProfiles.map((profile) => ({
+                    value: getProfileUuid(profile),
+                    label: getProfileLabel(profile),
+                  }))}
                   value={selectedProfileUuid}
-                  onChange={(event) => {
-                    setSelectedProfileUuid(event.target.value)
+                  onChange={(val) => {
+                    setSelectedProfileUuid(val)
                     setEditFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
                   }}
+                  placeholder={`Choose a ${entityType}`}
                   required
-                >
-                  <option value="">Choose a {entityType}</option>
-                  {manageableProfiles.map((profile) => {
-                    const uuid = getProfileUuid(profile)
-                    return (
-                      <option key={uuid} value={uuid}>
-                        {getProfileLabel(profile)}
-                      </option>
-                    )
-                  })}
-                </select>
+                />
               </div>
               <div className="field-group">
                 <label htmlFor={`edit-${entityType}-email`}>Email (leave blank to keep)</label>
@@ -301,31 +297,26 @@ export default function UserModals({
                 disabled={isDeleting}
                 onClick={() => setIsDeleteOpen(false)}
               >
-                Close
+                ×
               </button>
             </header>
             <form className="add-user-form" onSubmit={onDelete}>
               <div className="field-group edit-user-profile-select">
                 <label htmlFor={`delete-${entityType}-select`}>Select {entityType}</label>
-                <select
+                <SearchableSelect
                   id={`delete-${entityType}-select`}
+                  options={manageableProfiles.map((profile) => ({
+                    value: getProfileUuid(profile),
+                    label: getProfileLabel(profile),
+                  }))}
                   value={selectedDeleteProfileUuid}
-                  onChange={(event) => {
-                    setSelectedDeleteProfileUuid(event.target.value)
+                  onChange={(val) => {
+                    setSelectedDeleteProfileUuid(val)
                     setIsDeleteConfirmed(false)
                   }}
+                  placeholder={`Choose a ${entityType}`}
                   required
-                >
-                  <option value="">Choose a {entityType}</option>
-                  {manageableProfiles.map((profile) => {
-                    const uuid = getProfileUuid(profile)
-                    return (
-                      <option key={uuid} value={uuid}>
-                        {getProfileLabel(profile)}
-                      </option>
-                    )
-                  })}
-                </select>
+                />
               </div>
               <div className="delete-user-warning">
                 <strong>Warning:</strong> Deleting a {entityType} account removes authentication and all associated records permanently. This cannot be undone.

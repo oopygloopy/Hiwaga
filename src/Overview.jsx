@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
-import DataTable from './DataTable.jsx'
 import hiwagaLogo from './assets/hiwagalogo.png'
 import {
   compareRecordsByTime,
@@ -9,7 +8,7 @@ import {
   getProfileUuid,
 } from './utils/formatters'
 
-const PlayCount = lazy(() => import('./charts/playcount.jsx'))
+const LearningProgression = lazy(() => import('./charts/learningprogression.jsx'))
 const Records = lazy(() => import('./Records.jsx'))
 const Students = lazy(() => import('./Students.jsx'))
 const Teachers = lazy(() => import('./Teachers.jsx'))
@@ -81,12 +80,23 @@ function Overview({ user }) {
     middle_name: '',
     section: '',
   })
-  const [overviewStats, setOverviewStats] = useState({ studentCount: null, averageGrade: null, totalQuestionsAnswered: null, totalRecords: null })
+  const [overviewStats, setOverviewStats] = useState({
+    studentCount: null,
+    averageGrade: null,
+    totalQuestionsAnswered: null,
+    totalRecords: null,
+    avgGrowth: null,
+    avgInitial: null,
+    avgLatest: null,
+    initialMasteryRate: null,
+    latestMasteryRate: null,
+  })
+  const [chapterProgression, setChapterProgression] = useState([])
   const [isOverviewLoading, setIsOverviewLoading] = useState(true)
   const [overviewError, setOverviewError] = useState('')
   const [studentAverages, setStudentAverages] = useState([])
   const [sort, setSort] = useState({ column: 'Time', direction: -1 })
-  const [scoreXAxis, setScoreXAxis] = useState('finished_at')
+  const [scoreXAxis, setScoreXAxis] = useState('attempt')
 
   useEffect(() => {
     window.localStorage.setItem(activeViewStorageKey, activeView)
@@ -126,56 +136,177 @@ function Overview({ user }) {
           let count = 0
           let totalQuestionsAnswered = 0
           let totalRecords = 0
-          const studentsMap = new Map()
+          const allRecords = []
           const pageSize = 1000
 
           for (let offset = 0; ; offset += pageSize) {
             const { data, error } = await supabase
               .from('records')
-              .select('corr_percent, total_question, user, profile:profiles!user(first_name, last_name)')
+              .select('corr_percent, total_question, chapter, finished_at, user, profile:profiles!user(first_name, last_name)')
               .range(offset, offset + pageSize - 1)
 
-            if (error) return { average: null, totalQuestionsAnswered: null, students: [], error: error.message }
-
-            totalRecords += (data ?? []).length
-
-            for (const record of data ?? []) {
-              const value = Number(record.corr_percent)
-              if (record.corr_percent !== null && Number.isFinite(value)) {
-                total += value
-                count += 1
-
-                const userId = record.user === null || record.user === undefined ? '' : String(record.user)
-                if (userId) {
-                  const student = studentsMap.get(userId) ?? {
-                    name: [record.profile?.first_name, record.profile?.last_name].filter(Boolean).join(' ') || userId,
-                    total: 0,
-                    count: 0,
-                  }
-                  student.total += value
-                  student.count += 1
-                  studentsMap.set(userId, student)
-                }
-              }
-
-              const questions = Number(record.total_question)
-              if (record.total_question !== null && Number.isFinite(questions)) {
-                totalQuestionsAnswered += questions
+            if (error) {
+              return {
+                average: null,
+                totalQuestionsAnswered: null,
+                totalRecords: null,
+                avgGrowth: null,
+                avgInitial: null,
+                avgLatest: null,
+                initialMasteryRate: null,
+                latestMasteryRate: null,
+                chapterProgression: [],
+                students: [],
+                error: error.message,
               }
             }
 
+            totalRecords += (data ?? []).length
+            allRecords.push(...(data ?? []))
+
             if ((data ?? []).length < pageSize) break
           }
+
+          const sortedChronological = [...allRecords].sort((a, b) => {
+            const timeA = Date.parse(a.finished_at) || 0
+            const timeB = Date.parse(b.finished_at) || 0
+            return timeA - timeB
+          })
+
+          const userChapterMap = new Map()
+          const studentsMap = new Map()
+
+          for (const record of sortedChronological) {
+            const value = Number(record.corr_percent)
+            if (record.corr_percent !== null && Number.isFinite(value)) {
+              total += value
+              count += 1
+            }
+
+            const questions = Number(record.total_question)
+            if (record.total_question !== null && Number.isFinite(questions)) {
+              totalQuestionsAnswered += questions
+            }
+
+            const userId = record.user === null || record.user === undefined ? '' : String(record.user)
+            if (userId) {
+              if (!studentsMap.has(userId)) {
+                studentsMap.set(userId, {
+                  id: userId,
+                  name: [record.profile?.first_name, record.profile?.last_name].filter(Boolean).join(' ') || userId,
+                  total: 0,
+                  count: 0,
+                  initialScoreTotal: 0,
+                  latestScoreTotal: 0,
+                  chaptersCount: 0,
+                })
+              }
+              const student = studentsMap.get(userId)
+              if (Number.isFinite(value)) {
+                student.total += value
+                student.count += 1
+              }
+
+              if (record.chapter !== null && record.chapter !== undefined && String(record.chapter) !== '') {
+                const key = `${userId}:::${record.chapter}`
+                if (!userChapterMap.has(key)) userChapterMap.set(key, [])
+                userChapterMap.get(key).push(record)
+              }
+            }
+          }
+
+          let totalInitial = 0
+          let totalLatest = 0
+          let initialPassing = 0
+          let latestPassing = 0
+          let pairCount = 0
+          const chapterMap = new Map()
+
+          for (const [key, plays] of userChapterMap.entries()) {
+            const [userId, chapter] = key.split(':::')
+            const initialPlay = plays[0]
+            const latestPlay = plays[plays.length - 1]
+
+            const initScore = Number(initialPlay.corr_percent)
+            const lateScore = Number(latestPlay.corr_percent)
+
+            if (Number.isFinite(initScore) && Number.isFinite(lateScore)) {
+              totalInitial += initScore
+              totalLatest += lateScore
+              if (initScore >= 75) initialPassing += 1
+              if (lateScore >= 75) latestPassing += 1
+              pairCount += 1
+
+              const student = studentsMap.get(userId)
+              if (student) {
+                student.initialScoreTotal += initScore
+                student.latestScoreTotal += lateScore
+                student.chaptersCount += 1
+              }
+
+              if (!chapterMap.has(chapter)) {
+                chapterMap.set(chapter, {
+                  chapter,
+                  initialTotal: 0,
+                  latestTotal: 0,
+                  count: 0,
+                  totalPlays: 0,
+                })
+              }
+              const chData = chapterMap.get(chapter)
+              chData.initialTotal += initScore
+              chData.latestTotal += lateScore
+              chData.count += 1
+              chData.totalPlays += plays.length
+            }
+          }
+
+          const avgInitial = pairCount ? totalInitial / pairCount : null
+          const avgLatest = pairCount ? totalLatest / pairCount : null
+          const avgGrowth = (avgInitial !== null && avgLatest !== null) ? avgLatest - avgInitial : null
+          const initialMasteryRate = pairCount ? (initialPassing / pairCount) * 100 : null
+          const latestMasteryRate = pairCount ? (latestPassing / pairCount) * 100 : null
+
+          const chapterProgression = Array.from(chapterMap.values(), (ch) => ({
+            chapter: `Chapter ${ch.chapter}`,
+            rawChapter: ch.chapter,
+            initialAvg: Number((ch.initialTotal / ch.count).toFixed(1)),
+            latestAvg: Number((ch.latestTotal / ch.count).toFixed(1)),
+            growth: Number(((ch.latestTotal - ch.initialTotal) / ch.count).toFixed(1)),
+            totalPlays: ch.totalPlays,
+          })).sort((first, second) => {
+            const numA = Number(first.rawChapter)
+            const numB = Number(second.rawChapter)
+            if (Number.isFinite(numA) && Number.isFinite(numB)) return numA - numB
+            return String(first.rawChapter).localeCompare(String(second.rawChapter), undefined, { numeric: true })
+          })
+
+          const students = Array.from(studentsMap.values(), (student) => {
+            const avg = student.count ? student.total / student.count : 0
+            const initAvg = student.chaptersCount ? student.initialScoreTotal / student.chaptersCount : avg
+            const lateAvg = student.chaptersCount ? student.latestScoreTotal / student.chaptersCount : avg
+            const growth = lateAvg - initAvg
+            return {
+              id: student.id,
+              name: student.name,
+              average: avg,
+              initialAvg: initAvg,
+              latestAvg: lateAvg,
+              growth,
+            }
+          }).sort((first, second) => first.name.localeCompare(second.name))
 
           return {
             average: count ? total / count : null,
             totalQuestionsAnswered,
             totalRecords,
-            students: Array.from(studentsMap, ([id, student]) => ({
-              id,
-              name: student.name,
-              average: student.total / student.count,
-            })).sort((first, second) => first.name.localeCompare(second.name)),
+            avgGrowth,
+            avgInitial,
+            avgLatest,
+            initialMasteryRate,
+            latestMasteryRate,
+            chapterProgression,
+            students,
             error: '',
           }
         })(),
@@ -188,7 +319,13 @@ function Overview({ user }) {
         averageGrade: averageResult.average,
         totalQuestionsAnswered: averageResult.totalQuestionsAnswered,
         totalRecords: averageResult.totalRecords,
+        avgGrowth: averageResult.avgGrowth,
+        avgInitial: averageResult.avgInitial,
+        avgLatest: averageResult.avgLatest,
+        initialMasteryRate: averageResult.initialMasteryRate,
+        latestMasteryRate: averageResult.latestMasteryRate,
       })
+      setChapterProgression(averageResult.chapterProgression ?? [])
       setStudentAverages(averageResult.students)
       setOverviewError([profileCountResult.error?.message, averageResult.error].filter(Boolean).join('; '))
       setIsOverviewLoading(false)
@@ -209,7 +346,10 @@ function Overview({ user }) {
     const loadRecords = async () => {
       setIsRecordsLoading(true)
       setRecordsError('')
-      const { data, error } = await supabase.from('record_view').select('*')
+      const { data, error } = await supabase
+        .from('records')
+        .select('record_id, corr_percent, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
+        .order('finished_at', { ascending: false })
 
       if (!isMounted) {
         return
@@ -218,7 +358,26 @@ function Overview({ user }) {
       if (error) {
         setRecordsError(error.message)
       } else {
-        setRecords(data ?? [])
+        const formatted = (data ?? []).map((r) => {
+          const name = getProfileLabel(r.profile, String(r.user ?? ''))
+          const finishedDate = r.finished_at ? new Date(r.finished_at) : null
+          const dateStr = finishedDate ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(finishedDate) : '-'
+          const timeStr = finishedDate ? new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(finishedDate) : '-'
+          const scoreVal = r.corr_percent !== null && r.corr_percent !== undefined ? Number(r.corr_percent) : null
+
+          return {
+            id: r.record_id,
+            Name: name,
+            Chapter: r.chapter !== null && r.chapter !== undefined ? String(r.chapter) : '-',
+            Score: scoreVal !== null ? `${scoreVal.toFixed(1)}%` : '-',
+            rawScore: scoreVal,
+            Time: timeStr,
+            Date: dateStr,
+            'Duration (s)': r.time_elapsed_sec ?? '-',
+            rawTimestamp: r.finished_at ? Date.parse(r.finished_at) : 0,
+          }
+        })
+        setRecords(formatted)
       }
 
       setIsRecordsLoading(false)
@@ -239,14 +398,18 @@ function Overview({ user }) {
     const loadRecentActivity = async () => {
       setIsRecentActivityLoading(true)
       setRecentActivityError('')
-      const { data, error } = await supabase.from('record_view').select('*')
+      const { data, error } = await supabase
+        .from('records')
+        .select('record_id, corr_percent, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name)')
+        .order('finished_at', { ascending: false })
+        .limit(5)
 
       if (!isMounted) return
 
       if (error) {
         setRecentActivityError(error.message)
       } else {
-        setRecentActivityRecords([...data ?? []].sort(compareRecordsByTime).slice(0, 5))
+        setRecentActivityRecords(data ?? [])
       }
 
       setIsRecentActivityLoading(false)
@@ -510,15 +673,24 @@ function Overview({ user }) {
       const firstValue = firstRecord[sortColumn]
       const secondValue = secondRecord[sortColumn]
 
-      if (sortColumn === 'Time') {
+      if (sortColumn === 'Time' || sortColumn === 'Date') {
+        if (firstRecord.rawTimestamp && secondRecord.rawTimestamp) {
+          return (firstRecord.rawTimestamp - secondRecord.rawTimestamp) * sort.direction
+        }
         return compareRecordsByTime(firstRecord, secondRecord, sort.direction)
+      }
+
+      if (sortColumn === 'Score' || sortColumn === 'Grade') {
+        const valA = firstRecord.rawScore ?? -1
+        const valB = secondRecord.rawScore ?? -1
+        return (valA - valB) * sort.direction
       }
 
       if (firstValue === null || firstValue === undefined) return 1
       if (secondValue === null || secondValue === undefined) return -1
 
-      const firstNumber = sortColumn === 'Grade' ? Number.parseFloat(firstValue) : Number(firstValue)
-      const secondNumber = sortColumn === 'Grade' ? Number.parseFloat(secondValue) : Number(secondValue)
+      const firstNumber = Number(firstValue)
+      const secondNumber = Number(secondValue)
 
       if (Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) {
         return (firstNumber - secondNumber) * sort.direction
@@ -536,9 +708,30 @@ function Overview({ user }) {
   const filteredTeachers = teacherRows
 
   const studentLists = [
-    { title: 'Top Students', threshold: '>75', students: studentAverages.filter(({ average }) => average >= 75).sort((first, second) => second.average - first.average).slice(0, 5) },
-    { title: 'Struggling Students', threshold: '>50', students: studentAverages.filter(({ average }) => average >= 50 && average < 75).sort((first, second) => second.average - first.average).slice(0, 5) },
-    { title: 'Failing Students', threshold: '<50', students: studentAverages.filter(({ average }) => average >= 0 && average < 50).sort((first, second) => second.average - first.average).slice(0, 5) },
+    {
+      title: 'Most Improved',
+      threshold: 'Growth',
+      students: studentAverages
+        .filter(({ growth }) => growth > 0)
+        .sort((first, second) => second.growth - first.growth)
+        .slice(0, 5),
+    },
+    {
+      title: 'Top Students',
+      threshold: '≥75',
+      students: studentAverages
+        .filter(({ average }) => average >= 75)
+        .sort((first, second) => second.average - first.average)
+        .slice(0, 5),
+    },
+    {
+      title: 'Needs Support',
+      threshold: '<75',
+      students: studentAverages
+        .filter(({ average }) => average < 75)
+        .sort((first, second) => first.average - second.average)
+        .slice(0, 5),
+    },
   ]
 
   return (
@@ -629,47 +822,99 @@ function Overview({ user }) {
           <Suspense fallback={<p className="view-hint" role="status">Loading view...</p>}>
           {activeView === 'overview' && (
             <>
-              <p className="view-hint">Shows summary of student activity, recent records, and play count within the past 14 days.</p>
+              <p className="view-hint">Shows summary of student learning improvement, playthrough records, and play count.</p>
               <section className="overview-stats" aria-label="Overview statistics">
                 <div className="overview-stat">
                   <h2>Total Students</h2>
                   <p>{isOverviewLoading ? 'Loading...' : (overviewStats.studentCount ?? '-').toLocaleString()}</p>
                 </div>
                 <div className="overview-stat">
-                  <h2>Total Questions Answered</h2>
-                  <p>{isOverviewLoading
-                    ? 'Loading...'
-                    : (overviewStats.totalQuestionsAnswered ?? '-').toLocaleString()}</p>
-                </div>
-                <div className="overview-stat">
-                  <h2>Total Records</h2>
+                  <h2>Total Playthroughs</h2>
                   <p>{isOverviewLoading
                     ? 'Loading...'
                     : (overviewStats.totalRecords ?? '-').toLocaleString()}</p>
+                  <p className="overview-stat-sub">
+                    {isOverviewLoading || overviewStats.totalQuestionsAnswered === null
+                      ? ''
+                      : `${overviewStats.totalQuestionsAnswered.toLocaleString()} questions answered`}
+                  </p>
                 </div>
                 <div className="overview-stat">
-                  <h2>Avg. Grade</h2>
-                  <p>{isOverviewLoading
-                    ? 'Loading...'
-                    : overviewStats.averageGrade === null
-                      ? '-'
-                      : `${overviewStats.averageGrade.toFixed(1)}`}</p>
+                  <h2>Avg. Score Growth</h2>
+                  <p style={{ color: (overviewStats.avgGrowth ?? 0) >= 0 ? '#2f9e44' : 'inherit' }}>
+                    {isOverviewLoading
+                      ? 'Loading...'
+                      : overviewStats.avgGrowth === null
+                        ? '-'
+                        : `${overviewStats.avgGrowth >= 0 ? '+' : ''}${overviewStats.avgGrowth.toFixed(1)}%`}
+                  </p>
+                  <p className="overview-stat-sub">
+                    {overviewStats.avgInitial !== null && overviewStats.avgLatest !== null
+                      ? `Initial: ${overviewStats.avgInitial.toFixed(1)}% → Latest: ${overviewStats.avgLatest.toFixed(1)}%`
+                      : 'From first to latest attempt'}
+                  </p>
+                </div>
+                <div className="overview-stat">
+                  <h2>Mastery Rate (≥75%)</h2>
+                  <p style={{ color: (overviewStats.latestMasteryRate ?? 0) >= 75 ? '#2f9e44' : 'inherit' }}>
+                    {isOverviewLoading
+                      ? 'Loading...'
+                      : overviewStats.latestMasteryRate === null
+                        ? '-'
+                        : `${overviewStats.latestMasteryRate.toFixed(1)}%`}
+                  </p>
+                  <p className="overview-stat-sub">
+                    {overviewStats.initialMasteryRate !== null
+                      ? `Started at ${overviewStats.initialMasteryRate.toFixed(1)}% (first try)`
+                      : 'DepEd mastery standard'}
+                  </p>
                 </div>
               </section>
               {overviewError && <p className="records-error" role="alert">Unable to load overview statistics: {overviewError}</p>}
               <section className="overview-activity-layout" aria-label="Play count and student scores">
                 <div className="overview-activity-primary">
-                  <PlayCount />
+                  <LearningProgression data={chapterProgression} isLoading={isOverviewLoading} />
                   <section className="recent-activity" aria-labelledby="recent-activity-title">
                     <h2 id="recent-activity-title">Recent Activity</h2>
                     {isRecentActivityLoading && <p>Loading recent activity...</p>}
                     {recentActivityError && <p className="records-error" role="alert">Unable to load recent activity: {recentActivityError}</p>}
                     {!isRecentActivityLoading && !recentActivityError && recentActivityRecords.length === 0 && <p>No records found.</p>}
                     {!isRecentActivityLoading && !recentActivityError && recentActivityRecords.length > 0 && (
-                      <DataTable
-                        rows={recentActivityRecords}
-                        columns={['Name', 'Grade', 'Time', 'Date']}
-                      />
+                      <div className="activity-feed">
+                        {recentActivityRecords.map((item) => {
+                          const score = item.corr_percent !== null && item.corr_percent !== undefined ? Number(item.corr_percent) : null
+                          const scoreColor = score !== null ? (score >= 75 ? '#2f9e44' : score >= 50 ? '#d97706' : '#e03131') : 'var(--text)'
+                          const name = getProfileLabel(item.profile, String(item.user ?? 'Student'))
+                          const initials = name.split(' ').map((n) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || 'S'
+                          const dateStr = item.finished_at
+                            ? new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(item.finished_at))
+                            : '-'
+
+                          return (
+                            <div key={item.record_id} className="activity-feed-item">
+                              <div className="activity-feed-avatar" aria-hidden="true">{initials}</div>
+                              <div className="activity-feed-details">
+                                <div className="activity-feed-top">
+                                  <span className="activity-feed-name">{name}</span>
+                                  <span className="activity-feed-date">{dateStr}</span>
+                                </div>
+                                <div className="activity-feed-meta">
+                                  <span className="activity-feed-chapter">Chapter {item.chapter ?? '-'}</span>
+                                  {item.time_elapsed_sec !== null && item.time_elapsed_sec !== undefined && (
+                                    <span className="activity-feed-time">{item.time_elapsed_sec}s</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div
+                                className="activity-feed-score"
+                                style={{ backgroundColor: `${scoreColor}18`, color: scoreColor, borderColor: `${scoreColor}40` }}
+                              >
+                                {score !== null ? `${score.toFixed(0)}%` : '-'}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
                     )}
                   </section>
                 </div>
@@ -683,10 +928,12 @@ function Overview({ user }) {
                         <p className="student-score-empty">No students</p>
                       ) : (
                         <ul>
-                          {scoreStudents.map(({ id, name, average }) => (
+                          {scoreStudents.map(({ id, name, average, growth }) => (
                             <li key={id}>
                               <span>{name}</span>
-                              <strong>{average.toFixed(1)}</strong>
+                              <strong style={threshold === 'Growth' ? { color: '#2f9e44' } : undefined}>
+                                {threshold === 'Growth' ? `+${growth.toFixed(1)}%` : average.toFixed(1)}
+                              </strong>
                             </li>
                           ))}
                         </ul>

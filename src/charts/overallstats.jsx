@@ -4,6 +4,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -12,6 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import { supabase } from '../utils/supabase'
+import SearchableSelect from '../SearchableSelect.jsx'
 
 const getScoreColor = (value) => {
   if (value >= 75) return '#2f9e44'
@@ -37,15 +39,15 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
     let isMounted = true
 
     const loadRecords = async () => {
-      const { data, error } = await supabase
+      const { data, error: queryError } = await supabase
         .from('records')
         .select('finished_at, chapter, corr_percent, user, profile:profiles!user(last_name, first_name)')
         .order('finished_at', { ascending: true })
 
       if (!isMounted) return
 
-      if (error) {
-        setError(error.message)
+      if (queryError) {
+        setError(queryError.message)
       } else {
         setRecords(data ?? [])
       }
@@ -59,6 +61,13 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
       isMounted = false
     }
   }, [])
+
+  // Auto-switch to 'attempt' if user was on 'finished_at' and chooses 'corr_percent'
+  useEffect(() => {
+    if (metric === 'corr_percent' && xAxis === 'finished_at') {
+      setScoreXAxis('attempt')
+    }
+  }, [metric, xAxis, setScoreXAxis])
 
   const userOptions = Array.from(new Map(
     records
@@ -76,6 +85,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
   const userFilteredRecords = selectedUser
     ? records.filter((record) => String(record.user) === selectedUser)
     : records
+
   const filteredRecords = xAxis === 'finished_at' && timeWindow.days > 0
     ? userFilteredRecords.filter((record) => {
       const finishedAt = Date.parse(record.finished_at)
@@ -84,10 +94,68 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
     })
     : userFilteredRecords
 
+  const isChapterScoreProgression = xAxis === 'chapter' && metric === 'corr_percent'
+
   const chartRecords = (() => {
+    // Specialized Chapter view for scores: First Attempt vs. Latest Attempt
+    if (isChapterScoreProgression) {
+      const userChapterPlays = new Map()
+      for (const record of userFilteredRecords) {
+        if (record.chapter === null || record.chapter === undefined) continue
+        const key = `${record.user}:::${record.chapter}`
+        if (!userChapterPlays.has(key)) userChapterPlays.set(key, [])
+        userChapterPlays.get(key).push(record)
+      }
+
+      const chapterStats = new Map()
+      for (const [key, plays] of userChapterPlays.entries()) {
+        const [, chapter] = key.split(':::')
+        const initialPlay = plays[0]
+        const latestPlay = plays[plays.length - 1]
+        const initScore = Number(initialPlay.corr_percent)
+        const lateScore = Number(latestPlay.corr_percent)
+
+        if (Number.isFinite(initScore) && Number.isFinite(lateScore)) {
+          if (!chapterStats.has(chapter)) {
+            chapterStats.set(chapter, { chapter, initialTotal: 0, latestTotal: 0, count: 0, totalPlays: 0 })
+          }
+          const stat = chapterStats.get(chapter)
+          stat.initialTotal += initScore
+          stat.latestTotal += lateScore
+          stat.count += 1
+          stat.totalPlays += plays.length
+        }
+      }
+
+      return Array.from(chapterStats.values(), (stat) => ({
+        chapter: `Chapter ${stat.chapter}`,
+        rawChapter: stat.chapter,
+        initialAvg: Number((stat.initialTotal / stat.count).toFixed(1)),
+        latestAvg: Number((stat.latestTotal / stat.count).toFixed(1)),
+        growth: Number(((stat.latestTotal - stat.initialTotal) / stat.count).toFixed(1)),
+        totalPlays: stat.totalPlays,
+      })).sort((a, b) => {
+        const numA = Number(a.rawChapter)
+        const numB = Number(b.rawChapter)
+        if (Number.isFinite(numA) && Number.isFinite(numB)) return numA - numB
+        return String(a.rawChapter).localeCompare(String(b.rawChapter), undefined, { numeric: true })
+      })
+    }
+
+    let sourceRecords = filteredRecords
+    if (xAxis === 'attempt') {
+      const userChapterMap = new Map()
+      sourceRecords = filteredRecords.map((r) => {
+        const key = `${r.user}:::${r.chapter}`
+        const count = (userChapterMap.get(key) ?? 0) + 1
+        userChapterMap.set(key, count)
+        return { ...r, attempt: count }
+      })
+    }
+
     const groupedRecords = new Map()
 
-    for (const record of filteredRecords) {
+    for (const record of sourceRecords) {
       const corrPercent = record.corr_percent === null || record.corr_percent === undefined
         ? Number.NaN
         : Number(record.corr_percent)
@@ -99,7 +167,11 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
       if (xAxis === 'chapter') {
         if (record.chapter === null || record.chapter === undefined) continue
         key = String(record.chapter)
-        axisValue = record.chapter
+        axisValue = `Chapter ${record.chapter}`
+      } else if (xAxis === 'attempt') {
+        if (!record.attempt) continue
+        key = String(record.attempt)
+        axisValue = `Attempt ${record.attempt}`
       } else {
         const finishedAt = Date.parse(record.finished_at)
         if (!Number.isFinite(finishedAt)) continue
@@ -112,6 +184,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
 
       const groupedRecord = groupedRecords.get(key) ?? {
         [xAxis]: axisValue,
+        attemptNumber: Number(key),
         corrPercentTotal: 0,
         recordCount: 0,
       }
@@ -122,45 +195,53 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
 
     const chartRecords = Array.from(groupedRecords.values(), (groupedRecord) => ({
       [xAxis]: groupedRecord[xAxis],
+      attemptNumber: groupedRecord.attemptNumber,
       [metric]: metric === 'corr_percent'
-        ? groupedRecord.corrPercentTotal / groupedRecord.recordCount
+        ? Number((groupedRecord.corrPercentTotal / groupedRecord.recordCount).toFixed(1))
         : groupedRecord.recordCount,
     }))
+
     if (xAxis === 'chapter') {
       chartRecords.sort((first, second) => {
-        const firstNumber = Number(first.chapter)
-        const secondNumber = Number(second.chapter)
+        const firstNumber = Number(String(first.chapter).replace(/\D/g, ''))
+        const secondNumber = Number(String(second.chapter).replace(/\D/g, ''))
         if (Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) {
           return firstNumber - secondNumber
         }
         return String(first.chapter).localeCompare(String(second.chapter), undefined, { numeric: true })
       })
+    } else if (xAxis === 'attempt') {
+      chartRecords.sort((first, second) => first.attemptNumber - second.attemptNumber)
     }
 
     return chartRecords
   })()
-  const Chart = xAxis === 'chapter' ? BarChart : LineChart
+
+  const Chart = (xAxis === 'chapter') ? BarChart : LineChart
   const firstScoreX = chartRecords[0]?.finished_at
   const lastScoreX = chartRecords.at(-1)?.finished_at
   const scoreRange = lastScoreX - firstScoreX
-  const lineGradientStops = metric === 'corr_percent' ? chartRecords.flatMap((record, index) => {
-    const offset = scoreRange > 0 ? (record.finished_at - firstScoreX) / scoreRange : 0
-    const color = getScoreColor(record.corr_percent)
+
+  const lineGradientStops = (metric === 'corr_percent' && xAxis !== 'chapter') ? chartRecords.flatMap((record, index) => {
+    const offset = xAxis === 'finished_at'
+      ? (scoreRange > 0 ? (record.finished_at - firstScoreX) / scoreRange : 0)
+      : (chartRecords.length > 1 ? index / (chartRecords.length - 1) : 0)
+    const color = getScoreColor(record[metric])
 
     if (index === 0) return [{ offset, color }]
 
     return [
-      { offset, color: getScoreColor(chartRecords[index - 1].corr_percent) },
+      { offset, color: getScoreColor(chartRecords[index - 1][metric]) },
       { offset, color },
     ]
   }) : []
 
   return (
     <section className="overall-stats-section" aria-labelledby="overall-stats-title">
-      <h2 id="overall-stats-title">{metric === 'corr_percent' ? 'Overall Stats' : 'Total Records'}</h2>
+      <h2 id="overall-stats-title">{metric === 'corr_percent' ? 'Learning Progression & Scores' : 'Total Records'}</h2>
       <div className="overall-stats-filters">
         <div className="overall-stats-controls">
-          <label htmlFor="overall-stats-metric">Show the</label>
+          <label htmlFor="overall-stats-metric">Show</label>
           <select
             id="overall-stats-metric"
             value={metric}
@@ -170,29 +251,40 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
             <option value="total_records">Total records</option>
           </select>
         </div>
+
         <div className="overall-stats-user-filter">
-          <label htmlFor="overall-stats-user">of</label>
-          <select
+          <label htmlFor="overall-stats-user">for</label>
+          <SearchableSelect
             id="overall-stats-user"
+            options={userOptions}
             value={selectedUser}
-            onChange={(event) => setSelectedUser(event.target.value)}
-          >
-            <option value="">All users</option>
-            {userOptions.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-          </select>
+            onChange={setSelectedUser}
+            placeholder="All users"
+          />
         </div>
-        
+
         <div className="overall-stats-controls">
-          <label htmlFor="overall-stats-x-axis">over</label>
+          <label htmlFor="overall-stats-x-axis">by</label>
           <select
             id="overall-stats-x-axis"
             value={xAxis}
             onChange={(event) => setScoreXAxis(event.target.value)}
           >
-            <option value="finished_at">Time</option>
-            <option value="chapter">Chapters</option>
+            {metric === 'corr_percent' ? (
+              <>
+                <option value="attempt">Attempts (Learning Curve)</option>
+                <option value="chapter">Chapters (1st vs. Latest)</option>
+              </>
+            ) : (
+              <>
+                <option value="finished_at">Time (Calendar)</option>
+                <option value="chapter">Chapters</option>
+                <option value="attempt">Attempts</option>
+              </>
+            )}
           </select>
         </div>
+
         {xAxis === 'finished_at' && (
           <div className="overall-stats-time-filter">
             <label htmlFor="overall-stats-days-ago">from</label>
@@ -209,6 +301,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
           </div>
         )}
       </div>
+
       {isLoading && <p>Loading scores...</p>}
       {error && <p className="records-error" role="alert">Unable to load scores: {error}</p>}
       {!isLoading && !error && chartRecords.length === 0 && <p>No completed records found.</p>}
@@ -216,7 +309,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
         <div
           className="overall-stats-chart"
           role="img"
-          aria-label={`${metric === 'corr_percent' ? 'Overall stats' : 'Total records'} by ${xAxis === 'chapter' ? 'chapter' : 'completion date'}`}
+          aria-label={`${metric === 'corr_percent' ? 'Overall stats' : 'Total records'} by ${xAxis}`}
         >
           <ResponsiveContainer width="100%" height="100%">
             <Chart data={chartRecords} margin={{ top: 12, right: 12, bottom: 4, left: 0 }}>
@@ -232,7 +325,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
                 minTickGap={24}
               />
               <YAxis
-                dataKey={metric}
+                dataKey={isChapterScoreProgression ? undefined : metric}
                 domain={metric === 'corr_percent' ? [0, 100] : [0, 'auto']}
                 width={48}
                 tickFormatter={(value) => metric === 'corr_percent' ? `${value}%` : value}
@@ -241,12 +334,24 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
                 axisLine={false}
               />
               <Tooltip
-                labelFormatter={(value) => xAxis === 'finished_at'
-                  ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
-                  : `Chapter ${value}`}
-                formatter={(value) => metric === 'corr_percent'
-                  ? [`${value}%`, 'Score']
-                  : [value, 'Records']}
+                labelFormatter={(value, payload) => {
+                  if (xAxis === 'finished_at') {
+                    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
+                  }
+                  if (isChapterScoreProgression) {
+                    const item = payload?.[0]?.payload
+                    if (!item) return String(value)
+                    const growthSign = item.growth > 0 ? `+${item.growth}%` : `${item.growth}%`
+                    return `${value} (Growth: ${growthSign}, Plays: ${item.totalPlays})`
+                  }
+                  return String(value)
+                }}
+                formatter={(value, name) => {
+                  if (metric === 'corr_percent') {
+                    return [`${Number(value).toFixed(1)}%`, name === 'corr_percent' ? 'Score' : name]
+                  }
+                  return [value, 'Records']
+                }}
               />
               {xAxis !== 'chapter' && metric === 'corr_percent' && (
                 <defs>
@@ -258,14 +363,27 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
                 </defs>
               )}
               {xAxis === 'chapter' ? (
-                <Bar dataKey={metric} name={metric === 'corr_percent' ? 'Score' : 'Records'}>
-                  {chartRecords.map((record, index) => (
-                    <Cell
-                      key={`${record.chapter}-${index}`}
-                      fill={metric === 'corr_percent' ? getScoreColor(record.corr_percent) : 'var(--accent)'}
+                isChapterScoreProgression ? (
+                  <>
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      iconType="circle"
+                      wrapperStyle={{ paddingBottom: '8px', fontSize: '13px' }}
                     />
-                  ))}
-                </Bar>
+                    <Bar dataKey="initialAvg" name="First Attempt" fill="#74c0fc" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="latestAvg" name="Latest Attempt" fill="#2f9e44" radius={[3, 3, 0, 0]} />
+                  </>
+                ) : (
+                  <Bar dataKey={metric} name="Records">
+                    {chartRecords.map((record, index) => (
+                      <Cell
+                        key={`${record.chapter}-${index}`}
+                        fill="var(--accent)"
+                      />
+                    ))}
+                  </Bar>
+                )
               ) : (
                 <Line
                   type="linear"
@@ -278,7 +396,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
                       cx={props.cx}
                       cy={props.cy}
                       r={3}
-                      fill={metric === 'corr_percent' ? getScoreColor(props.payload.corr_percent) : 'var(--accent)'}
+                      fill={metric === 'corr_percent' ? getScoreColor(props.payload[metric]) : 'var(--accent)'}
                     />
                   )}
                   activeDot={(props) => (
@@ -286,7 +404,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
                       cx={props.cx}
                       cy={props.cy}
                       r={5}
-                      fill={metric === 'corr_percent' ? getScoreColor(props.payload.corr_percent) : 'var(--accent)'}
+                      fill={metric === 'corr_percent' ? getScoreColor(props.payload[metric]) : 'var(--accent)'}
                     />
                   )}
                 />

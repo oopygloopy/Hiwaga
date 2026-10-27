@@ -22,10 +22,35 @@ export default function DataTable({ rows = [], columns: visibleColumns, excludeC
             </tr>
           ) : (
             rows.map((row, index) => (
-              <tr key={row.id ?? index}>
-                {columns.map((column) => (
-                  <td key={column}>{formatCell(row[column])}</td>
-                ))}
+              <tr key={row.record_id ?? row.id ?? index}>
+                {columns.map((column) => {
+                  const value = row[column]
+                  if (column === 'Score' || column === 'Grade') {
+                    const num = typeof value === 'number' ? value : Number.parseFloat(String(value).replace('%', ''))
+                    if (Number.isFinite(num)) {
+                      const color = num >= 75 ? '#2f9e44' : num >= 50 ? '#d97706' : '#e03131'
+                      return (
+                        <td key={column}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontWeight: 600,
+                              fontSize: '12px',
+                              color,
+                              background: `${color}18`,
+                              border: `1px solid ${color}40`,
+                            }}
+                          >
+                            {num.toFixed(1)}%
+                          </span>
+                        </td>
+                      )
+                    }
+                  }
+                  return <td key={column}>{formatCell(value)}</td>
+                })}
               </tr>
             ))
           )}

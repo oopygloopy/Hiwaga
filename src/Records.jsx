@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
+import SearchableSelect from './SearchableSelect.jsx'
 import { formatCell, getColumns } from './utils/formatters'
 
 const OverallStats = lazy(() => import('./charts/overallstats.jsx'))
@@ -92,21 +93,18 @@ export default function Records({
       </Suspense>
       <div className="records-toolbar">
         <div className="records-filter-controls">
-          <label>
-            User
-            <select
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '180px' }}>
+            <span>User</span>
+            <SearchableSelect
+              options={userOptions.map((userName) => ({ value: userName, label: userName }))}
               value={selectedUser}
-              onChange={(event) => {
-                setSelectedUser(event.target.value)
+              onChange={(val) => {
+                setSelectedUser(val)
                 setCurrentPage(1)
               }}
-            >
-              <option value="">All users</option>
-              {userOptions.map((userName) => (
-                <option key={userName} value={userName}>{userName}</option>
-              ))}
-            </select>
-          </label>
+              placeholder="All users"
+            />
+          </div>
           <label>
             Chapter
             <select
@@ -136,9 +134,9 @@ export default function Records({
           </button>
           <button
             type="button"
-            aria-pressed={sort?.column === 'Grade'}
+            aria-pressed={sort?.column === 'Score'}
             onClick={() => {
-              setSort({ column: 'Grade', direction: -1 })
+              setSort({ column: 'Score', direction: -1 })
               setCurrentPage(1)
             }}
           >
@@ -175,7 +173,7 @@ export default function Records({
                 rowCount={filteredRecords.length}
                 onPageChange={setCurrentPage}
               />
-              <DataTable rows={pageRecords} excludeColumns={['Grade']} />
+              <DataTable rows={pageRecords} excludeColumns={['rawScore', 'rawTimestamp']} />
             </>
           ) : <p>No records match the selected filters.</p>}
         </>

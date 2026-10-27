@@ -14,56 +14,97 @@ export default function Leaderboard() {
     let isMounted = true
 
     const loadLeaderboard = async () => {
-      const studentsByUser = new Map()
       const pageSize = 1000
+      const allRecords = []
 
       try {
         for (let offset = 0; ; offset += pageSize) {
           const { data, error: queryError } = await supabase
             .from('records')
-            .select('user, corr_percent, time_elapsed_sec, profile:profiles!user(last_name, first_name, middle_name)')
+            .select('user, corr_percent, time_elapsed_sec, finished_at, chapter, profile:profiles!user(last_name, first_name, middle_name)')
             .range(offset, offset + pageSize - 1)
 
           if (queryError) throw queryError
 
-          for (const record of data ?? []) {
-            if (record.user === null || record.user === undefined || String(record.user) === '') continue
-
-            const userId = String(record.user)
-            const student = studentsByUser.get(userId) ?? {
-              id: userId,
-              name: getProfileLabel(record.profile, userId),
-              gradeTotal: 0,
-              gradeCount: 0,
-              timeTotal: 0,
-              timeCount: 0,
-            }
-
-            const grade = Number(record.corr_percent)
-            if (record.corr_percent !== null && Number.isFinite(grade)) {
-              student.gradeTotal += grade
-              student.gradeCount += 1
-            }
-
-            const time = Number(record.time_elapsed_sec)
-            if (record.time_elapsed_sec !== null && Number.isFinite(time)) {
-              student.timeTotal += time
-              student.timeCount += 1
-            }
-
-            studentsByUser.set(userId, student)
-          }
+          allRecords.push(...(data ?? []))
 
           if ((data ?? []).length < pageSize) break
         }
 
+        const sortedRecords = [...allRecords].sort((a, b) => {
+          const timeA = Date.parse(a.finished_at) || 0
+          const timeB = Date.parse(b.finished_at) || 0
+          return timeA - timeB
+        })
+
+        const studentsByUser = new Map()
+        const userChapterPlays = new Map()
+
+        for (const record of sortedRecords) {
+          if (record.user === null || record.user === undefined || String(record.user) === '') continue
+
+          const userId = String(record.user)
+          const student = studentsByUser.get(userId) ?? {
+            id: userId,
+            name: getProfileLabel(record.profile, userId),
+            gradeTotal: 0,
+            gradeCount: 0,
+            timeTotal: 0,
+            timeCount: 0,
+          }
+
+          const grade = Number(record.corr_percent)
+          if (record.corr_percent !== null && Number.isFinite(grade)) {
+            student.gradeTotal += grade
+            student.gradeCount += 1
+          }
+
+          const time = Number(record.time_elapsed_sec)
+          if (record.time_elapsed_sec !== null && Number.isFinite(time)) {
+            student.timeTotal += time
+            student.timeCount += 1
+          }
+
+          studentsByUser.set(userId, student)
+
+          if (record.chapter !== null && record.chapter !== undefined && String(record.chapter) !== '') {
+            const key = `${userId}:::${record.chapter}`
+            if (!userChapterPlays.has(key)) userChapterPlays.set(key, [])
+            userChapterPlays.get(key).push(record)
+          }
+        }
+
+        const studentGrowthMap = new Map()
+        for (const [key, plays] of userChapterPlays.entries()) {
+          const [userId] = key.split(':::')
+          const initialPlay = plays[0]
+          const latestPlay = plays[plays.length - 1]
+          const initScore = Number(initialPlay.corr_percent)
+          const lateScore = Number(latestPlay.corr_percent)
+
+          if (Number.isFinite(initScore) && Number.isFinite(lateScore)) {
+            const growthData = studentGrowthMap.get(userId) ?? { totalGrowth: 0, chapterCount: 0 }
+            growthData.totalGrowth += (lateScore - initScore)
+            growthData.chapterCount += 1
+            studentGrowthMap.set(userId, growthData)
+          }
+        }
+
         if (!isMounted) return
 
-        setStudents(Array.from(studentsByUser.values(), (student) => ({
-          ...student,
-          averageGrade: student.gradeCount ? student.gradeTotal / student.gradeCount : null,
-          averageTime: student.timeCount ? student.timeTotal / student.timeCount : null,
-        })))
+        setStudents(Array.from(studentsByUser.values(), (student) => {
+          const growthInfo = studentGrowthMap.get(student.id)
+          const averageGrowth = growthInfo && growthInfo.chapterCount > 0
+            ? growthInfo.totalGrowth / growthInfo.chapterCount
+            : null
+
+          return {
+            ...student,
+            averageGrade: student.gradeCount ? student.gradeTotal / student.gradeCount : null,
+            averageTime: student.timeCount ? student.timeTotal / student.timeCount : null,
+            averageGrowth,
+          }
+        }))
       } catch (queryError) {
         if (!isMounted) return
         setError(queryError?.message || 'Unable to load leaderboard.')
@@ -90,6 +131,17 @@ export default function Leaderboard() {
       if (secondTime === null) return -1
 
       return firstTime - secondTime
+    }
+
+    if (sortBy === 'growth') {
+      const firstGrowth = firstStudent.averageGrowth
+      const secondGrowth = secondStudent.averageGrowth
+
+      if (firstGrowth === null && secondGrowth === null) return 0
+      if (firstGrowth === null) return 1
+      if (secondGrowth === null) return -1
+
+      return secondGrowth - firstGrowth
     }
 
     const firstGrade = firstStudent.averageGrade
@@ -122,6 +174,16 @@ export default function Leaderboard() {
         </button>
         <button
           type="button"
+          aria-pressed={sortBy === 'growth'}
+          onClick={() => {
+            setSortBy('growth')
+            setCurrentPage(1)
+          }}
+        >
+          Most Improved
+        </button>
+        <button
+          type="button"
           aria-pressed={sortBy === 'time'}
           onClick={() => {
             setSortBy('time')
@@ -149,15 +211,25 @@ export default function Leaderboard() {
                   <th scope="col">Rank</th>
                   <th scope="col">Name</th>
                   <th scope="col">Avg. Grade</th>
+                  <th scope="col">Improvement</th>
                   <th scope="col">Avg. Time</th>
                 </tr>
               </thead>
               <tbody>
-                {pageStudents.map(({ id, name, averageGrade, averageTime }, index) => (
+                {pageStudents.map(({ id, name, averageGrade, averageGrowth, averageTime }, index) => (
                   <tr key={id}>
                     <td>#{(page - 1) * 10 + index + 1}</td>
                     <td>{name}</td>
                     <td>{formatAverage(averageGrade, '%')}</td>
+                    <td>
+                      {averageGrowth === null ? (
+                        '-'
+                      ) : (
+                        <span style={{ color: averageGrowth > 0 ? '#2f9e44' : averageGrowth < 0 ? '#e03131' : 'inherit', fontWeight: 600 }}>
+                          {averageGrowth >= 0 ? '+' : ''}{averageGrowth.toFixed(1)}%
+                        </span>
+                      )}
+                    </td>
                     <td>{formatAverage(averageTime, ' sec')}</td>
                   </tr>
                 ))}

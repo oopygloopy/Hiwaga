@@ -106,8 +106,9 @@
 
 .welcome-school-icon {
   display: block;
-  width: 48px;
   height: 48px;
+  width: auto;
+  max-width: 160px;
   flex: 0 0 auto;
   object-fit: contain;
   transition: transform 0.2s ease;
@@ -174,6 +175,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  text-align: center;
 }
 
 .home-title {
@@ -200,6 +202,30 @@
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   text-align: center;
+}
+
+.home-download-btn {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 14px 36px;
+  background: var(--primary, #c0392b);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 50px;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  transition: background 0.18s, transform 0.12s;
+}
+
+.home-download-btn:hover {
+  background: #a93226;
+  transform: translateY(-2px);
+}
+
+.home-download-btn:active {
+  transform: translateY(0);
 }
 
 .home-glass-card .welcome-kicker {
@@ -242,6 +268,115 @@
   max-width: 680px;
   font-size: 20px;
   line-height: 1.7;
+}
+
+/* ==========================================================================
+   About Us Section (Hero & Pillars)
+   ========================================================================== */
+
+.about-hero-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+  margin-bottom: clamp(36px, 6vw, 56px);
+}
+
+.about-text-content h2 {
+  margin-bottom: 18px;
+}
+
+.about-text-content p:not(.welcome-kicker) {
+  font-size: 20px;
+  line-height: 1.7;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.about-media-showcase {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-screenshot-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  background: #e9ecef;
+  border-radius: 12px;
+  border: 2px dashed #ced4da;
+  color: #868e96;
+  font-size: 16px;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.placeholder-sub {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.about-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 3vw, 24px);
+  margin-top: 20px;
+}
+
+.about-pillar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.about-pillar-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.pillar-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.about-pillar-card h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.about-pillar-card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+@media (max-width: 860px) {
+  .about-hero-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .about-pillars-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-screenshot-placeholder {
+    max-width: 220px;
+  }
 }
 
 .contact-social-links {
@@ -921,24 +1056,73 @@
   font-size: 32px;
 }
 
+.dashboard-user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  margin-top: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+}
+
+.dashboard-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-user-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-role-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-role-badge.role-teacher {
+  color: #1971c2;
+  background: rgba(25, 113, 194, 0.12);
+  border: 1px solid rgba(25, 113, 194, 0.3);
+}
+
+.dashboard-role-badge.role-superadmin {
+  color: #7048e8;
+  background: rgba(112, 72, 232, 0.12);
+  border: 1px solid rgba(112, 72, 232, 0.3);
+}
+
 .sign-out-button {
-  padding: 10px 16px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-h);
-  background: var(--code-bg);
+  background: var(--card-bg, #ffffff);
   font: inherit;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: all 0.18s ease;
 }
 
 .sign-out-button:hover {
-  border-color: var(--accent);
-  background: rgba(65, 105, 225, 0.1);
-  transform: translateY(-1px);
+  border-color: #e03131;
+  color: #e03131;
+  background: rgba(224, 49, 49, 0.08);
 }
 
 /* ==========================================================================
@@ -1900,4 +2084,186 @@
   font-weight: 700;
   border: 1px solid transparent;
 }
+
+/* ==========================================================================
+   Grade Distribution & Leaderboard Podium
+   ========================================================================== */
+
+.grade-distribution-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.grade-distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.grade-distribution-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.grade-distribution-subtitle {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.grade-distribution-chart {
+  width: 100%;
+  height: 180px;
+}
+
+.grade-distribution-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  justify-content: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.grade-distribution-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.grade-distribution-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.grade-distribution-desc {
+  color: var(--text);
+}
+
+.leaderboard-podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: end;
+  margin: 20px 0 28px;
+}
+
+.podium-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card-bg, #ffffff);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.podium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.podium-gold {
+  order: 2;
+  border-color: #ffd43b;
+  background: linear-gradient(180deg, rgba(255, 212, 59, 0.15) 0%, var(--card-bg, #ffffff) 100%);
+  padding: 28px 16px;
+  box-shadow: 0 8px 24px rgba(255, 212, 59, 0.2);
+}
+
+.podium-silver {
+  order: 1;
+  border-color: #ced4da;
+  background: linear-gradient(180deg, rgba(206, 212, 218, 0.2) 0%, var(--card-bg, #ffffff) 100%);
+}
+
+.podium-bronze {
+  order: 3;
+  border-color: #d97706;
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.12) 0%, var(--card-bg, #ffffff) 100%);
+}
+
+.podium-badge {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.podium-gold .podium-badge {
+  font-size: 40px;
+}
+
+.podium-rank {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.podium-gold .podium-rank {
+  color: #b07d00;
+}
+
+.podium-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6px;
+}
+
+.podium-stat {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2f9e44;
+  margin-bottom: 4px;
+}
+
+.podium-plays {
+  font-size: 12px;
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .leaderboard-podium {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .podium-gold {
+    order: 1;
+    padding: 20px 14px;
+  }
+
+  .podium-silver {
+    order: 2;
+  }
+
+  .podium-bronze {
+    order: 3;
+  }
+}
+
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
 import UserModals from './UserModals.jsx'
+import BatchUploadModal from './BatchUploadModal.jsx'
 
 export default function Students({
   students,
@@ -40,8 +41,10 @@ export default function Students({
   deleteStudentError,
   setDeleteStudentError,
   handleDeleteStudent,
+  onRefresh,
 }) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [isBatchUploadOpen, setIsBatchUploadOpen] = useState(false)
   const manageableProfiles = profiles.filter((profile) => !String(profile.role ?? '').toLowerCase().includes('teacher'))
   const sortedStudents = [...filteredStudents].sort((firstStudent, secondStudent) =>
     String(firstStudent.Name ?? '').localeCompare(String(secondStudent.Name ?? ''), undefined, {
@@ -63,6 +66,13 @@ export default function Students({
             setIsAddStudentOpen(true)
           }}>
             Add student
+          </button>
+          <button
+            className="add-user-button"
+            type="button"
+            onClick={() => setIsBatchUploadOpen(true)}
+          >
+            Batch upload
           </button>
           <button className="add-user-button" type="button" onClick={() => {
             setUpdateStudentError('')
@@ -146,6 +156,15 @@ export default function Students({
         isDeleting={isDeletingStudent}
         deleteError={deleteStudentError}
         onDelete={handleDeleteStudent}
+      />
+
+      <BatchUploadModal
+        isOpen={isBatchUploadOpen}
+        onClose={() => setIsBatchUploadOpen(false)}
+        sections={sections}
+        onSuccess={() => {
+          if (onRefresh) onRefresh()
+        }}
       />
     </div>
   )

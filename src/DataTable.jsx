@@ -1,6 +1,12 @@
 import { formatCell, getColumns } from './utils/formatters'
 
-export default function DataTable({ rows = [], columns: visibleColumns, excludeColumns = [] }) {
+export default function DataTable({
+  rows = [],
+  columns: visibleColumns,
+  excludeColumns = [],
+  sort,
+  onSort,
+}) {
   const columns = visibleColumns ?? getColumns(rows, excludeColumns)
 
   return (
@@ -8,9 +14,28 @@ export default function DataTable({ rows = [], columns: visibleColumns, excludeC
       <table className="records-table">
         <thead>
           <tr>
-            {columns.map((column) => (
-              <th key={column}>{column}</th>
-            ))}
+            {columns.map((column) => {
+              const isCurrentSort = sort?.column === column
+              const sortIcon = isCurrentSort ? (sort.direction === 1 ? ' ▲' : ' ▼') : ''
+
+              if (onSort) {
+                return (
+                  <th
+                    key={column}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => onSort(column)}
+                    aria-sort={isCurrentSort ? (sort.direction === 1 ? 'ascending' : 'descending') : 'none'}
+                  >
+                    <span>{column}</span>
+                    <span style={{ fontSize: '11px', marginLeft: '4px', opacity: isCurrentSort ? 1 : 0.4 }}>
+                      {isCurrentSort ? sortIcon : ' ↕'}
+                    </span>
+                  </th>
+                )
+              }
+
+              return <th key={column}>{column}</th>
+            })}
           </tr>
         </thead>
         <tbody>

@@ -10,16 +10,17 @@ const LearningProgression = lazy(() => import('./charts/learningprogression.jsx'
 const Records = lazy(() => import('./Records.jsx'))
 const Students = lazy(() => import('./Students.jsx'))
 const Teachers = lazy(() => import('./Teachers.jsx'))
+const Sections = lazy(() => import('./Sections.jsx'))
 const Questions = lazy(() => import('./Questions.jsx'))
 const Leaderboard = lazy(() => import('./Leaderboard.jsx'))
 
-const dashboardViews = ['overview', 'leaderboard', 'records', 'questions', 'students', 'teachers']
+const dashboardViews = ['overview', 'leaderboard', 'records', 'questions', 'students', 'teachers', 'sections']
 const activeViewStorageKey = 'hiwaga-dashboard-active-view'
 
 function Overview({ user }) {
   const [activeView, setActiveView] = useState(() => {
     const savedView = window.localStorage.getItem(activeViewStorageKey)
-    return savedView === 'users' ? 'students' : savedView === 'teachers' ? 'overview' : dashboardViews.includes(savedView) ? savedView : 'overview'
+    return savedView === 'users' ? 'students' : (savedView === 'teachers' || savedView === 'sections') ? 'overview' : dashboardViews.includes(savedView) ? savedView : 'overview'
   })
   const [isSignOutOpen, setIsSignOutOpen] = useState(false)
   const [isNavOpen, setIsNavOpen] = useState(false)
@@ -41,6 +42,7 @@ function Overview({ user }) {
   const [isTeachersLoading, setIsTeachersLoading] = useState(false)
   const [teachersError, setTeachersError] = useState('')
   const [profileRole, setProfileRole] = useState('')
+  const [currentProfile, setCurrentProfile] = useState(null)
   const [profiles, setProfiles] = useState([])
   const [sections, setSections] = useState([])
   const [selectedSection, setSelectedSection] = useState('')
@@ -102,12 +104,15 @@ function Overview({ user }) {
     const loadProfileRole = async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('first_name, last_name, middle_name, role')
         .eq('uuid', user.id)
         .maybeSingle()
 
       if (!isMounted) return
 
+      if (data) {
+        setCurrentProfile(data)
+      }
       const role = String(data?.role ?? '').trim().toLowerCase()
       setProfileRole(error ? '' : role)
     }
@@ -461,6 +466,22 @@ function Overview({ user }) {
     setIsSignOutOpen(false)
   }
 
+  const reloadSections = async () => {
+    try {
+      const { data } = await supabase.from('sections').select('id, section_name')
+      if (data) {
+        setSections(
+          data
+            .filter(({ id, section_name }) => id !== null && id !== undefined && section_name !== null && String(section_name).trim() !== '')
+            .sort((a, b) => String(a.section_name).localeCompare(String(b.section_name))),
+        )
+      }
+      setStudentsRefreshKey((k) => k + 1)
+    } catch {
+      // Ignore background refresh errors
+    }
+  }
+
   const handleCreateStudent = async (event) => {
     event.preventDefault()
     setCreateStudentError('')
@@ -641,6 +662,10 @@ function Overview({ user }) {
     },
   ]
 
+  const userDisplayName = currentProfile
+    ? [currentProfile.first_name, currentProfile.last_name].filter(Boolean).join(' ') || (user?.email ?? 'User')
+    : (user?.email ?? 'User')
+
   return (
     <main className="dashboard-page">
       <div className="dashboard-shell">
@@ -667,7 +692,12 @@ function Overview({ user }) {
                 { id: 'records', label: 'Records' },
                 { id: 'questions', label: 'Questions' },
                 { id: 'students', label: 'Students' },
-                ...(profileRole === 'superadmin' ? [{ id: 'teachers', label: 'Teachers' }] : []),
+                ...(profileRole === 'superadmin'
+                  ? [
+                      { id: 'teachers', label: 'Teachers' },
+                      { id: 'sections', label: 'Sections' },
+                    ]
+                  : []),
               ].map(({ id, label }) => (
                 <button
                   key={id}
@@ -683,16 +713,29 @@ function Overview({ user }) {
                 </button>
               ))}
             </nav>
-            <button
-              className="sign-out-button"
-              type="button"
-              onClick={() => {
-                setIsNavOpen(false)
-                setIsSignOutOpen(true)
-              }}
-            >
-              Sign out
-            </button>
+
+            <div className="dashboard-user-card">
+              <div className="dashboard-user-info">
+                <span className="dashboard-user-name" title={userDisplayName}>
+                  {userDisplayName}
+                </span>
+                {profileRole && (
+                  <span className={`dashboard-role-badge role-${profileRole}`}>
+                    {profileRole === 'superadmin' ? 'Superadmin' : 'Teacher'}
+                  </span>
+                )}
+              </div>
+              <button
+                className="sign-out-button"
+                type="button"
+                onClick={() => {
+                  setIsNavOpen(false)
+                  setIsSignOutOpen(true)
+                }}
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -723,7 +766,21 @@ function Overview({ user }) {
 
         <section className="dashboard-panel">
           <header className="dashboard-header">
-            <h1>{activeView === 'overview' ? 'Overview' : activeView === 'leaderboard' ? 'Leaderboard' : activeView === 'records' ? 'Records' : activeView === 'students' ? 'Students' : activeView === 'teachers' ? 'Teachers' : 'Questions'}</h1>
+            <h1>
+              {activeView === 'overview'
+                ? 'Overview'
+                : activeView === 'leaderboard'
+                  ? 'Leaderboard'
+                  : activeView === 'records'
+                    ? 'Records'
+                    : activeView === 'students'
+                      ? 'Students'
+                      : activeView === 'teachers'
+                        ? 'Teachers'
+                        : activeView === 'sections'
+                          ? 'Sections'
+                          : 'Questions'}
+            </h1>
           </header>
 
           <Suspense fallback={<p className="view-hint" role="status">Loading view...</p>}>
@@ -907,6 +964,7 @@ function Overview({ user }) {
               deleteStudentError={deleteStudentError}
               setDeleteStudentError={setDeleteStudentError}
               handleDeleteStudent={handleDeleteStudent}
+              onRefresh={() => setStudentsRefreshKey((k) => k + 1)}
             />
           )}
 
@@ -947,6 +1005,10 @@ function Overview({ user }) {
               setDeleteUserError={setDeleteStudentError}
               handleDeleteUser={handleDeleteStudent}
             />
+          )}
+
+          {activeView === 'sections' && profileRole === 'superadmin' && (
+            <Sections onSectionsChange={reloadSections} />
           )}
           </Suspense>
         </section>

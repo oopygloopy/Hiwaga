@@ -1,10 +1,10 @@
-import './App.css'
+﻿import './App.css'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import hiwagaLogo from './assets/hiwagalogo.png'
 import facebookIcon from './assets/fb-icon.png'
 import youtubeIcon from './assets/yt-icon.png'
-import einsteinIcon from './assets/einstein-icon.png'
+import einsteinLogo from './assets/einsteinlogo.png'
 
 const Overview = lazy(() => import('./Overview.jsx'))
 const MAX_LOGIN_ATTEMPTS = 5
@@ -142,8 +142,13 @@ function App() {
     <main className="welcome-page">
       <header className="welcome-toolbar">
         <div className="welcome-toolbar-brand">
-          <a href="#home" aria-label="Go to top of page">
-            <img className="welcome-school-icon" src={einsteinIcon} alt="Little Einstein Discovery School" />
+          <a
+            href="https://little-einstein.com/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Little Einstein Discovery School website"
+          >
+            <img className="welcome-school-icon" src={einsteinLogo} alt="Little Einstein Discovery School" />
           </a>
           <button
             className={`mobile-nav-toggle ${isNavOpen ? 'is-open' : ''}`}
@@ -160,7 +165,7 @@ function App() {
         <div className={`welcome-nav-menu ${isNavOpen ? 'is-open' : ''}`}>
           <nav className="welcome-navigation" aria-label="Main navigation">
             <a href="#home" onClick={() => setIsNavOpen(false)}>Home</a>
-            <a href="#about-us" onClick={() => setIsNavOpen(false)}>About Us</a>
+            <a href="#about-us" onClick={() => setIsNavOpen(false)}>About</a>
             <a href="#faq" onClick={() => setIsNavOpen(false)}>FAQ</a>
             <a href="#contact" onClick={() => setIsNavOpen(false)}>Contact</a>
           </nav>
@@ -188,15 +193,52 @@ function App() {
               Venture through the world of "Hiwaga", and learn about the history of the Philippines through an immersive world and engaging turn-based gameplay. Battle through time against enemies using the power of knowledge!
             </p>
           </div>
+          <a
+            className="home-download-btn"
+            href="/hiwaga.apk"
+            download="Hiwaga.apk"
+          >
+            ⬇ Download the Game
+          </a>
         </div>
       </section>
 
-      <section className="welcome-section info-section" id="about-us" aria-labelledby="about-title">
-        <p className="welcome-kicker">The story behind the adventure</p>
-        <h2 id="about-title">About Hiwaga</h2>
-        <p>
-          Hiwaga is a mobile game made by 4 students in collaboration with Little Einstein Discovery School. Our goal with Hiwaga is to provide a new and interesting way of learning Philippine history for Grade 5 students. The purpose of this website is to provide information about the game and to allow the teachers of Little Einstein to track the scores of students in Hiwaga.
-        </p>
+      <section className="welcome-section info-section about-section" id="about-us" aria-labelledby="about-title">
+        <div className="about-hero-layout">
+          <div className="about-text-content">
+            <p className="welcome-kicker">The story behind the adventure</p>
+            <h2 id="about-title">About Hiwaga</h2>
+            <p>
+              Hiwaga is an educational mobile RPG made by 4 IT students in collaboration with Little Einstein Discovery School. Our goal is to provide a replayable and interactive game with an engaging story that teaches Grade 5 students about social studies.
+            </p>
+            <p>
+              Within this website, a teacher can log in, monitor student progress, review game quiz scores, track student improvements, and manage student accounts.
+            </p>
+          </div>
+
+            <div className="about-screenshot-placeholder" aria-label="Game Preview">
+              <span>Game Screenshot</span>
+              <span className="placeholder-sub">Coming Soon</span>
+            </div>
+        </div>
+
+        <div className="about-pillars-grid">
+          <div className="about-pillar-card">
+            <span className="pillar-icon">⚔️</span>
+            <h3>Gamified Learning</h3>
+            <p>Students journey through Philippine history, engaging in turn-based combat using the power of knowledge.</p>
+          </div>
+          <div className="about-pillar-card">
+            <span className="pillar-icon">🏫</span>
+            <h3>School Partnership</h3>
+            <p>Made with direct collaboration with teachers at Little Einstein Discovery School to align with Grade 5 Araling Panlipunan.</p>
+          </div>
+          <div className="about-pillar-card">
+            <span className="pillar-icon">📊</span>
+            <h3>Teacher Monitoring</h3>
+            <p>Provides teachers with the tools to track the growth of any students playing Hiwaga through their scores within the game.</p>
+          </div>
+        </div>
       </section>
 
       <section className="welcome-section info-section faq-section" id="faq" aria-labelledby="faq-title">
@@ -231,9 +273,6 @@ function App() {
           </a>
           <a href="https://www.youtube.com/channel/UCjhx_lSDb7HrS83KP7kwDeg" target="_blank" rel="noreferrer" aria-label="Little Einstein Discovery School on YouTube">
             <img src={youtubeIcon} alt="" />
-          </a>
-          <a href="https://little-einstein.com/" target="_blank" rel="noreferrer" aria-label="Little Einstein Discovery School website">
-            <img src={einsteinIcon} alt="" />
           </a>
         </div>
         <p className="contact-find-us">Visit us at:</p>

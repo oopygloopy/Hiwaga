@@ -100,11 +100,11 @@ export default function Sections({ onSectionsChange }) {
     event.preventDefault()
     setMutationError('')
 
-    const trimmed = newSectionName.trim()
-    if (!trimmed) {
+    if (!newSectionName.trim()) {
       setMutationError('Section name cannot be empty.')
       return
     }
+    const trimmed = `Grade 5 - ${newSectionName.trim()}`
 
     const exists = sections.some((s) => s.section_name.toLowerCase() === trimmed.toLowerCase())
     if (exists) {
@@ -136,11 +136,11 @@ export default function Sections({ onSectionsChange }) {
       return
     }
 
-    const trimmed = editSectionName.trim()
-    if (!trimmed) {
+    if (!editSectionName.trim()) {
       setMutationError('Section name cannot be empty.')
       return
     }
+    const trimmed = `Grade 5 - ${editSectionName.trim()}`
 
     const duplicate = sections.some(
       (s) => String(s.id) !== String(editSectionId) && s.section_name.toLowerCase() === trimmed.toLowerCase(),
@@ -228,6 +228,7 @@ export default function Sections({ onSectionsChange }) {
     'Enrolled Students': studentCounts[s.id] || 0,
   }))
 
+  const selectedEditSection = sections.find((s) => String(s.id) === String(editSectionId))
   const selectedDeleteSection = sections.find((s) => String(s.id) === String(deleteSectionId))
   const deleteCount = selectedDeleteSection ? studentCounts[selectedDeleteSection.id] || 0 : 0
 
@@ -293,8 +294,6 @@ export default function Sections({ onSectionsChange }) {
           <DataTable
             rows={tableRows}
             columns={['Section Name', 'Enrolled Students']}
-            sort={sort}
-            onSort={handleSortChange}
             rowActions={(row) => (
               <div className="row-actions">
                 <button
@@ -305,7 +304,11 @@ export default function Sections({ onSectionsChange }) {
                   onClick={() => {
                     setMutationError('')
                     setEditSectionId(String(row._sectionId))
-                    setEditSectionName(row._sectionName)
+                    // Strip the auto-prefix so the field shows only the bare name
+                    const bare = row._sectionName.startsWith('Grade 5 - ')
+                      ? row._sectionName.slice('Grade 5 - '.length)
+                      : row._sectionName
+                    setEditSectionName(bare)
                     setDialog('edit')
                   }}
                 >
@@ -357,14 +360,18 @@ export default function Sections({ onSectionsChange }) {
             <form className="add-user-form" onSubmit={handleAddSection}>
               <div className="field-group">
                 <label htmlFor="new-section-name">Section name</label>
-                <input
-                  id="new-section-name"
-                  type="text"
-                  placeholder="e.g. Grade 5 - Diamond"
-                  value={newSectionName}
-                  onChange={(event) => setNewSectionName(event.target.value)}
-                  required
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ whiteSpace: 'nowrap', color: 'var(--text)', fontSize: '15px' }}>Grade 5 -</span>
+                  <input
+                    id="new-section-name"
+                    type="text"
+                    placeholder="e.g. Diamond"
+                    value={newSectionName}
+                    onChange={(event) => setNewSectionName(event.target.value)}
+                    required
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
               {mutationError && <p className="add-user-error" role="alert">{mutationError}</p>}
               <footer className="add-user-form-actions">
@@ -392,7 +399,7 @@ export default function Sections({ onSectionsChange }) {
         >
           <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-section-title">
             <header className="add-user-dialog-header">
-              <h2 id="edit-section-title">Edit section</h2>
+              <h2 id="edit-section-title">Edit {selectedEditSection?.section_name || 'section'}</h2>
               <button
                 className="add-user-close"
                 type="button"
@@ -405,19 +412,19 @@ export default function Sections({ onSectionsChange }) {
             </header>
             <form className="add-user-form" onSubmit={handleEditSection}>
               <div className="field-group">
-                <label>Section</label>
-                <p className="modal-readonly-target">{editSectionName}</p>
-              </div>
-              <div className="field-group">
                 <label htmlFor="edit-section-name">New section name</label>
-                <input
-                  id="edit-section-name"
-                  type="text"
-                  placeholder="Enter new section name"
-                  value={editSectionName}
-                  onChange={(event) => setEditSectionName(event.target.value)}
-                  required
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ whiteSpace: 'nowrap', color: 'var(--text)', fontSize: '15px' }}>Grade 5 -</span>
+                  <input
+                    id="edit-section-name"
+                    type="text"
+                    placeholder="Enter section name"
+                    value={editSectionName}
+                    onChange={(event) => setEditSectionName(event.target.value)}
+                    required
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
               {mutationError && <p className="add-user-error" role="alert">{mutationError}</p>}
               <footer className="add-user-form-actions">
@@ -445,7 +452,7 @@ export default function Sections({ onSectionsChange }) {
         >
           <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-section-title">
             <header className="add-user-dialog-header">
-              <h2 id="delete-section-title">Delete section</h2>
+              <h2 id="delete-section-title">Delete {selectedDeleteSection?.section_name || 'section'}</h2>
               <button
                 className="add-user-close"
                 type="button"
@@ -457,11 +464,6 @@ export default function Sections({ onSectionsChange }) {
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleDeleteSection}>
-              <div className="field-group">
-                <label>Section</label>
-                <p className="modal-readonly-target">{selectedDeleteSection?.section_name || 'Selected Section'}</p>
-              </div>
-
               {deleteSectionId && deleteCount > 0 && (
                 <div className="delete-user-warning">
                   <strong>Warning:</strong> {deleteCount} student(s) currently belong to this section. Deleting it may cause database errors or leave students unassigned.

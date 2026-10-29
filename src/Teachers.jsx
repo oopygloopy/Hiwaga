@@ -3,7 +3,8 @@ import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
 import UserModals from './UserModals.jsx'
 import { getProfileLabel, getProfileUuid } from './utils/formatters'
-import editIcon from './assets/edit.svg'
+import { supabase } from './utils/supabase'
+import resetIcon from './assets/reset.svg'
 import deleteIcon from './assets/delete.svg'
 
 export default function Teachers({
@@ -43,6 +44,7 @@ export default function Teachers({
   handleDeleteUser,
 }) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [resetStatus, setResetStatus] = useState({})
   const manageableProfiles = profiles
   const sortedTeachers = [...filteredUsers].sort((firstTeacher, secondTeacher) =>
     String(firstTeacher.Name ?? '').localeCompare(String(secondTeacher.Name ?? ''), undefined, {
@@ -133,6 +135,49 @@ export default function Teachers({
     return row.uuid ?? row.UUID ?? row.user_id ?? row.id ?? ''
   }
 
+  const handleResetPassword = async (uuid) => {
+    if (!uuid) return
+    setResetStatus((prev) => ({ ...prev, [uuid]: { type: 'loading', message: 'Resetting...' } }))
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!session?.access_token) throw new Error('Session expired. Sign in again.')
+
+      const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ uuid, password: 'admin123' }),
+      })
+      const responseData = await response.json().catch(() => null)
+      if (!response.ok) {
+        throw new Error(responseData?.message || responseData?.error || 'Failed to reset.')
+      }
+
+      setResetStatus((prev) => ({ ...prev, [uuid]: { type: 'success', message: 'Password reset to admin123' } }))
+      setTimeout(() => {
+        setResetStatus((prev) => {
+          const next = { ...prev }
+          delete next[uuid]
+          return next
+        })
+      }, 4000)
+    } catch (err) {
+      setResetStatus((prev) => ({ ...prev, [uuid]: { type: 'error', message: err.message || 'Reset failed.' } }))
+      setTimeout(() => {
+        setResetStatus((prev) => {
+          const next = { ...prev }
+          delete next[uuid]
+          return next
+        })
+      }, 5000)
+    }
+  }
+
   return (
     <div className="dashboard-content">
       <p className="view-hint">Lists the name, section (if applicable), and the last activity of every teacher.</p>
@@ -163,40 +208,51 @@ export default function Teachers({
           />
           <DataTable
             rows={pageTeachers}
-            rowActions={(row) => (
-              <div className="row-actions">
-                <button
-                  type="button"
-                  className="row-action-btn row-action-edit"
-                  title="Edit teacher"
-                  aria-label={`Edit ${row.Name || 'teacher'}`}
-                  onClick={() => {
-                    const uuid = getUuidForRow(row)
-                    setUpdateUserError('')
-                    setSelectedProfileUuid(uuid)
-                    setEditUserFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
-                    setIsEditUserOpen(true)
-                  }}
-                >
-                  <img src={editIcon} alt="" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="row-action-btn row-action-delete"
-                  title="Delete teacher"
-                  aria-label={`Delete ${row.Name || 'teacher'}`}
-                  onClick={() => {
-                    const uuid = getUuidForRow(row)
-                    setDeleteUserError('')
-                    setSelectedDeleteProfileUuid(uuid)
-                    setIsDeleteConfirmed(false)
-                    setIsDeleteUserOpen(true)
-                  }}
-                >
-                  <img src={deleteIcon} alt="" aria-hidden="true" />
-                </button>
-              </div>
-            )}
+            rowActions={(row) => {
+              const uuid = getUuidForRow(row)
+              const status = uuid ? resetStatus[uuid] : null
+              return (
+                <div className="row-actions">
+                  <button
+                    type="button"
+                    className="row-action-btn row-action-reset"
+                    title="Reset password to admin123"
+                    aria-label={`Reset password for ${row.Name || 'teacher'}`}
+                    disabled={status?.type === 'loading'}
+                    onClick={() => handleResetPassword(uuid)}
+                  >
+                    <img src={resetIcon} alt="" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="row-action-btn row-action-delete"
+                    title="Delete teacher"
+                    aria-label={`Delete ${row.Name || 'teacher'}`}
+                    onClick={() => {
+                      setDeleteUserError('')
+                      setSelectedDeleteProfileUuid(uuid)
+                      setIsDeleteConfirmed(false)
+                      setIsDeleteUserOpen(true)
+                    }}
+                  >
+                    <img src={deleteIcon} alt="" aria-hidden="true" />
+                  </button>
+                  {status && (
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: status.type === 'success' ? '#2f9e44' : status.type === 'error' ? '#e03131' : 'var(--text)',
+                        whiteSpace: 'nowrap',
+                        marginLeft: '4px',
+                      }}
+                    >
+                      {status.message}
+                    </span>
+                  )}
+                </div>
+              )
+            }}
           />
         </>
       )}
@@ -212,7 +268,7 @@ export default function Teachers({
         isCreating={isCreatingUser}
         createError={createUserError}
         onCreate={handleCreateUser}
-        isEditOpen={isEditUserOpen}
+        isEditOpen={false}
         setIsEditOpen={setIsEditUserOpen}
         selectedProfileUuid={selectedProfileUuid}
         setSelectedProfileUuid={setSelectedProfileUuid}

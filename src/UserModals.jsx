@@ -90,18 +90,20 @@ export default function UserModals({
                   required
                 />
               </div>
-              <div className="field-group">
-                <label htmlFor={`new-${entityType}-password`}>Password</label>
-                <input
-                  id={`new-${entityType}-password`}
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={newUser.password}
-                  onChange={(event) => setNewUser({ ...newUser, password: event.target.value })}
-                  required
-                />
-              </div>
+              {entityType !== 'teacher' && (
+                <div className="field-group">
+                  <label htmlFor={`new-${entityType}-password`}>Password</label>
+                  <input
+                    id={`new-${entityType}-password`}
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={newUser.password}
+                    onChange={(event) => setNewUser({ ...newUser, password: event.target.value })}
+                    required
+                  />
+                </div>
+              )}
               <div className="field-group">
                 <label htmlFor={`new-${entityType}-first-name`}>First name</label>
                 <input
@@ -144,9 +146,9 @@ export default function UserModals({
                   name="section"
                   value={newUser.section}
                   onChange={(event) => setNewUser({ ...newUser, section: event.target.value })}
-                  required
+                  required={entityType !== 'teacher'}
                 >
-                  <option value="">Select a section</option>
+                  <option value="">{entityType === 'teacher' ? 'No Section' : 'Select a section'}</option>
                   {sections.map(({ id, section_name }) => (
                     <option key={id} value={id}>{section_name}</option>
                   ))}
@@ -178,7 +180,7 @@ export default function UserModals({
         >
           <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby={`edit-${entityType}-title`}>
             <header className="add-user-dialog-header">
-              <h2 id={`edit-${entityType}-title`}>Edit {entityType}</h2>
+              <h2 id={`edit-${entityType}-title`}>Edit {editProfileName || entityType}</h2>
               <button
                 className="add-user-close"
                 type="button"
@@ -190,12 +192,7 @@ export default function UserModals({
               </button>
             </header>
             <form className="add-user-form" onSubmit={onUpdate}>
-              {selectedProfileUuid ? (
-                <div className="field-group">
-                  <label>{entityType === 'student' ? 'Student' : 'Teacher'}</label>
-                  <p className="modal-readonly-target">{editProfileName}</p>
-                </div>
-              ) : (
+              {!selectedProfileUuid && (
                 <div className="field-group edit-user-profile-select">
                   <label htmlFor={`edit-${entityType}-select`}>Select {entityType}</label>
                   <SearchableSelect
@@ -314,7 +311,7 @@ export default function UserModals({
         >
           <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby={`delete-${entityType}-title`}>
             <header className="add-user-dialog-header">
-              <h2 id={`delete-${entityType}-title`}>Delete {entityType}</h2>
+              <h2 id={`delete-${entityType}-title`}>Delete {deleteProfileName || entityType}</h2>
               <button
                 className="add-user-close"
                 type="button"
@@ -326,12 +323,7 @@ export default function UserModals({
               </button>
             </header>
             <form className="add-user-form" onSubmit={onDelete}>
-              {selectedDeleteProfileUuid ? (
-                <div className="field-group">
-                  <label>{entityType === 'student' ? 'Student' : 'Teacher'}</label>
-                  <p className="modal-readonly-target">{deleteProfileName}</p>
-                </div>
-              ) : (
+              {!selectedDeleteProfileUuid && (
                 <div className="field-group edit-user-profile-select">
                   <label htmlFor={`delete-${entityType}-select`}>Select {entityType}</label>
                   <SearchableSelect

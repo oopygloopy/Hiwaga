@@ -18,8 +18,8 @@
     "semantic_hash": ""
   },
   "src/App.jsx": {
-    "mtime": 1793253904.0061283,
-    "seen": 1793253954.503017,
+    "mtime": 1793254151.2589278,
+    "seen": 1793268383.9727437,
     "ast_hash": "25877d5d31f632baf41a23aba95465e2",
     "semantic_hash": ""
   },
@@ -30,15 +30,15 @@
     "semantic_hash": ""
   },
   "src/Leaderboard.jsx": {
-    "mtime": 1793253908.7947898,
-    "seen": 1793253954.503017,
+    "mtime": 1793254310.4290488,
+    "seen": 1793268383.9737432,
     "ast_hash": "b5cad54eb9d0552d574ea7e845e0fbb4",
     "semantic_hash": ""
   },
   "src/Overview.jsx": {
-    "mtime": 1793248704.4320538,
-    "seen": 1793248946.3708131,
-    "ast_hash": "6e04a36fa95e9f95eed9cec0c3995167",
+    "mtime": 1793268521.386642,
+    "seen": 1793270061.193606,
+    "ast_hash": "0daf8ae2dfe71cba727cabb19c0bdbe8",
     "semantic_hash": ""
   },
   "src/PaginationControls.jsx": {
@@ -54,9 +54,9 @@
     "semantic_hash": ""
   },
   "src/Records.jsx": {
-    "mtime": 1793246330.6660488,
-    "seen": 1793246402.2011988,
-    "ast_hash": "6a070d9eddcee0e30808e06287bd1c18",
+    "mtime": 1793270464.2984056,
+    "seen": 1793271108.861284,
+    "ast_hash": "673edbc7a34092962970de1dfe88b6de",
     "semantic_hash": ""
   },
   "src/Students.jsx": {
@@ -66,9 +66,9 @@
     "semantic_hash": ""
   },
   "src/Teachers.jsx": {
-    "mtime": 1793252987.2894883,
-    "seen": 1793253954.503017,
-    "ast_hash": "58d688d7d9e190100fc71cd3e233f0a7",
+    "mtime": 1793268521.5326746,
+    "seen": 1793270061.193606,
+    "ast_hash": "72d7b2e4230296bd885c2d860a44b398",
     "semantic_hash": ""
   },
   "src/charts/overallstats.jsx": {
@@ -365,12 +365,6 @@
     "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
     "semantic_hash": ""
   },
-  "src/assets/einstein-icon.png": {
-    "mtime": 1792925329.9997458,
-    "seen": 1793022539.7581563,
-    "ast_hash": "20ed59a0f2b3e17a90bad7e4d8901e04",
-    "semantic_hash": ""
-  },
   "src/assets/einsteinlogo.png": {
     "mtime": 1792289178.5405815,
     "seen": 1793022539.7581563,
@@ -395,12 +389,6 @@
     "ast_hash": "41447ecb32839f96bc81d2f558b02d1e",
     "semantic_hash": ""
   },
-  "src/assets/ps-icon.png": {
-    "mtime": 1792741565.2800379,
-    "seen": 1793022539.7581563,
-    "ast_hash": "7eb9ef33d6d4e78c5d40cb16b93657eb",
-    "semantic_hash": ""
-  },
   "src/assets/react.svg": {
     "mtime": 1789719402.9205031,
     "seen": 1793022539.7581563,
@@ -420,9 +408,9 @@
     "semantic_hash": ""
   },
   "src/UserModals.jsx": {
-    "mtime": 1793248994.658627,
-    "seen": 1793249415.9684663,
-    "ast_hash": "35aa46ce3f60e35824574f28266c6405",
+    "mtime": 1793271263.1256914,
+    "seen": 1793271317.1966624,
+    "ast_hash": "f28e7941ac9010e6644091eaa387846c",
     "semantic_hash": ""
   },
   "src/utils/formatters.js": {
@@ -456,51 +444,15 @@
     "semantic_hash": ""
   },
   "src/Sections.jsx": {
-    "mtime": 1793252987.060435,
-    "seen": 1793253954.503017,
-    "ast_hash": "787c0b952fb0baee9c4488d28b4eb0a8",
-    "semantic_hash": ""
-  },
-  "src/assets/chart.png": {
-    "mtime": 1793184365.0831249,
-    "seen": 1793191253.1273966,
-    "ast_hash": "af5a24000153401c44b2db33eacb2171",
-    "semantic_hash": ""
-  },
-  "src/assets/crossedswords.png": {
-    "mtime": 1793184334.7937086,
-    "seen": 1793191253.1273966,
-    "ast_hash": "d9932d8b461251ea363e3352b9514d42",
-    "semantic_hash": ""
-  },
-  "src/assets/firstmedal-icon.png": {
-    "mtime": 1793184287.1649954,
-    "seen": 1793191253.1273966,
-    "ast_hash": "3b86e33edfc51056beb5e360f3d4e205",
-    "semantic_hash": ""
-  },
-  "src/assets/school.png": {
-    "mtime": 1793184346.8030095,
-    "seen": 1793191253.1273966,
-    "ast_hash": "ac1f35b0ddea8179d50a5c665aaaebb4",
-    "semantic_hash": ""
-  },
-  "src/assets/secondmedal-icon.png": {
-    "mtime": 1793184307.5583427,
-    "seen": 1793191253.1273966,
-    "ast_hash": "ec748dd7207d0729d9a6fdb3018affda",
-    "semantic_hash": ""
-  },
-  "src/assets/thirdmedal-icon.png": {
-    "mtime": 1793184320.6912675,
-    "seen": 1793191253.1273966,
-    "ast_hash": "cb277950a0d1f3752e01f2729a16d76b",
+    "mtime": 1793271288.3946004,
+    "seen": 1793271317.1966624,
+    "ast_hash": "7bb9ea895cba90a3e18c1d4226b984c2",
     "semantic_hash": ""
   },
   "src/StudentSummary.jsx": {
-    "mtime": 1793247194.5120654,
-    "seen": 1793248309.8595595,
-    "ast_hash": "1fee2a5bb654f5011df311c2fa4a0b5a",
+    "mtime": 1793270464.4564395,
+    "seen": 1793271108.861284,
+    "ast_hash": "4f0aca179314f662d73c856f9ea01f80",
     "semantic_hash": ""
   },
   "src/assets/chart.svg": {
@@ -549,6 +501,12 @@
     "mtime": 1793251680.643379,
     "seen": 1793252352.9234555,
     "ast_hash": "1c41de6ff415a1da68269a5c52566837",
+    "semantic_hash": ""
+  },
+  "src/assets/reset.svg": {
+    "mtime": 1793262372.6469853,
+    "seen": 1793268383.9737432,
+    "ast_hash": "616265bc95a9f249777415c0f544a2b2",
     "semantic_hash": ""
   }
 }

@@ -13,11 +13,8 @@ import {
   YAxis,
 } from 'recharts'
 import { supabase } from './utils/supabase'
-import DataTable from './DataTable.jsx'
-import { formatCell } from './utils/formatters'
 
 const CHAPTERS = ['1', '2', '3', '4']
-const RECORD_COLUMNS = ['Chapter', 'Score', 'Date & Time', 'Duration (s)']
 
 const getScoreColor = (value) => {
   if (value >= 75) return '#2f9e44'
@@ -200,42 +197,18 @@ export default function StudentSummary({ userId, userName, section = '' }) {
     })
 
   // ── Score by attempt (line chart) ─────────────────────────────────────────
-  const chapterAttemptMap = new Map()
+  let globalAttempt = 0
   const attemptData = records
     .filter((r) => r.corr_percent !== null && Number.isFinite(Number(r.corr_percent)))
     .map((r) => {
-      const key = String(r.chapter ?? '')
-      const count = (chapterAttemptMap.get(key) ?? 0) + 1
-      chapterAttemptMap.set(key, count)
+      globalAttempt += 1
       return {
-        attempt: count,
+        attempt: globalAttempt,
         score: Number(Number(r.corr_percent).toFixed(1)),
         chapter: r.chapter,
         date: r.finished_at ? new Intl.DateTimeFormat(undefined, { dateStyle: 'short' }).format(new Date(r.finished_at)) : '',
       }
     })
-
-  // ── History table rows ─────────────────────────────────────────────────────
-  const tableRows = [...records].reverse().map((r) => {
-    const scoreVal = r.corr_percent !== null && r.corr_percent !== undefined ? Number(r.corr_percent) : null
-    const correctCount = r.correct_ans !== null ? Number(r.correct_ans) : null
-    const totalQ = r.total_question !== null ? Number(r.total_question) : null
-    const finishedDate = r.finished_at ? new Date(r.finished_at) : null
-    const dateFormatted = finishedDate
-      ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(finishedDate)
-      : '-'
-
-    return {
-      id: r.record_id,
-      Chapter: r.chapter !== null && r.chapter !== undefined ? String(r.chapter) : '-',
-      Score: scoreVal !== null ? `${scoreVal.toFixed(1)}%` : '-',
-      'Date & Time': dateFormatted,
-      'Duration (s)': r.time_elapsed_sec ?? '-',
-      rawScore: scoreVal,
-      rawCorrect: correctCount,
-      rawTotal: totalQ,
-    }
-  })
 
   return (
     <section className="student-summary-panel" aria-labelledby="student-summary-title">
@@ -340,14 +313,43 @@ export default function StudentSummary({ userId, userName, section = '' }) {
         </section>
       )}
 
-      {/* ── Play history table ────────────────────────────────────────────── */}
+      {/* ── Play history ──────────────────────────────────────────────────── */}
       <section className="student-summary-section" aria-labelledby="student-history-title">
         <h2 id="student-history-title">Play History</h2>
-        <DataTable
-          rows={tableRows}
-          columns={RECORD_COLUMNS}
-          excludeColumns={['rawScore', 'rawCorrect', 'rawTotal']}
-        />
+        <div className="activity-feed">
+          {[...records].reverse().map((r) => {
+            const score = r.corr_percent !== null && r.corr_percent !== undefined ? Number(r.corr_percent) : null
+            const correctCount = r.correct_ans !== null ? Number(r.correct_ans) : null
+            const totalQ = r.total_question !== null ? Number(r.total_question) : null
+            const scoreColor = score !== null ? getScoreColor(score) : 'var(--text)'
+            const dateStr = r.finished_at
+              ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(r.finished_at))
+              : '-'
+            return (
+              <div key={r.record_id} className="activity-row-item">
+                <div className="activity-row-main">
+                  <span className="activity-feed-chapter">Ch. {r.chapter ?? '-'}</span>
+                  {r.time_elapsed_sec !== null && r.time_elapsed_sec !== undefined && (
+                    <span className="activity-feed-time">{r.time_elapsed_sec}s</span>
+                  )}
+                </div>
+                <div className="activity-row-side">
+                  <span className="activity-feed-date">{dateStr}</span>
+                  <div
+                    className="activity-feed-score"
+                    style={{ backgroundColor: `${scoreColor}18`, color: scoreColor, borderColor: `${scoreColor}40` }}
+                  >
+                    {score !== null
+                      ? correctCount !== null
+                        ? `${correctCount}/${totalQ} (${score.toFixed(0)}%)`
+                        : `${score.toFixed(0)}%`
+                      : '-'}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </section>
     </section>
   )

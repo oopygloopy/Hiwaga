@@ -24,6 +24,10 @@ function Overview({ user }) {
   })
   const [isSignOutOpen, setIsSignOutOpen] = useState(false)
   const [isNavOpen, setIsNavOpen] = useState(false)
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
+  const [editProfileFields, setEditProfileFields] = useState({ email: '', password: '', first_name: '', last_name: '', middle_name: '' })
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
+  const [editProfileError, setEditProfileError] = useState('')
 
   useEffect(() => {
     if (!isNavOpen) return undefined
@@ -466,6 +470,56 @@ function Overview({ user }) {
     setIsSignOutOpen(false)
   }
 
+  const handleEditProfile = async (event) => {
+    event.preventDefault()
+    setEditProfileError('')
+
+    const patch = { uuid: user.id }
+    for (const field of ['email', 'password', 'first_name', 'last_name', 'middle_name']) {
+      const value = editProfileFields[field].trim()
+      if (value) patch[field] = value
+    }
+
+    if (Object.keys(patch).length === 1) {
+      setEditProfileError('Enter at least one field to update.')
+      return
+    }
+
+    setIsUpdatingProfile(true)
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again.')
+
+      const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(patch),
+      })
+      const responseData = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(responseData?.message || responseData?.error || `Unable to update profile (${response.status}).`)
+
+      // Refresh sidebar name
+      const { data: updated } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, middle_name, role')
+        .eq('uuid', user.id)
+        .maybeSingle()
+      if (updated) setCurrentProfile(updated)
+
+      setIsEditProfileOpen(false)
+      setEditProfileFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '' })
+    } catch (err) {
+      setEditProfileError(err.message || 'Unable to update profile.')
+    } finally {
+      setIsUpdatingProfile(false)
+    }
+  }
+
   const reloadSections = async () => {
     try {
       const { data } = await supabase.from('sections').select('id, section_name')
@@ -501,8 +555,10 @@ function Overview({ user }) {
         },
         body: JSON.stringify({
           ...newStudent,
-          section: Number(newStudent.section),
-          ...(activeView === 'teachers' ? { role: 'teacher' } : {}),
+          section: (newStudent.section !== '' && newStudent.section !== null && newStudent.section !== undefined && !Number.isNaN(Number(newStudent.section)))
+            ? Number(newStudent.section)
+            : null,
+          ...(activeView === 'teachers' ? { role: 'teacher', password: 'admin123' } : {}),
         }),
       })
       const responseData = await response.json().catch(() => null)
@@ -735,6 +791,18 @@ function Overview({ user }) {
               >
                 Sign out
               </button>
+              <button
+                className="edit-profile-button"
+                type="button"
+                onClick={() => {
+                  setIsNavOpen(false)
+                  setEditProfileError('')
+                  setEditProfileFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '' })
+                  setIsEditProfileOpen(true)
+                }}
+              >
+                Edit profile
+              </button>
             </div>
           </div>
         </aside>
@@ -760,6 +828,99 @@ function Overview({ user }) {
                   Sign out
                 </button>
               </footer>
+            </section>
+          </div>
+        )}
+
+        {isEditProfileOpen && (
+          <div
+            className="add-user-backdrop"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !isUpdatingProfile) setIsEditProfileOpen(false)
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && !isUpdatingProfile) setIsEditProfileOpen(false)
+            }}
+          >
+            <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
+              <header className="add-user-dialog-header">
+                <h2 id="edit-profile-title">Edit profile</h2>
+                <button
+                  className="add-user-close"
+                  type="button"
+                  aria-label="Close dialog"
+                  disabled={isUpdatingProfile}
+                  onClick={() => setIsEditProfileOpen(false)}
+                >
+                  ×
+                </button>
+              </header>
+              <form className="add-user-form" onSubmit={handleEditProfile}>
+                <div className="field-group">
+                  <label htmlFor="edit-profile-email">Email (leave blank to keep)</label>
+                  <input
+                    id="edit-profile-email"
+                    type="email"
+                    autoComplete="email"
+                    value={editProfileFields.email}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, email: event.target.value })}
+                    placeholder="New email"
+                  />
+                </div>
+                <div className="field-group">
+                  <label htmlFor="edit-profile-password">Password (leave blank to keep)</label>
+                  <input
+                    id="edit-profile-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={editProfileFields.password}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, password: event.target.value })}
+                    placeholder="New password"
+                  />
+                </div>
+                <div className="field-group">
+                  <label htmlFor="edit-profile-first-name">First name (leave blank to keep)</label>
+                  <input
+                    id="edit-profile-first-name"
+                    type="text"
+                    autoComplete="given-name"
+                    value={editProfileFields.first_name}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, first_name: event.target.value })}
+                    placeholder="New first name"
+                  />
+                </div>
+                <div className="field-group">
+                  <label htmlFor="edit-profile-last-name">Last name (leave blank to keep)</label>
+                  <input
+                    id="edit-profile-last-name"
+                    type="text"
+                    autoComplete="family-name"
+                    value={editProfileFields.last_name}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, last_name: event.target.value })}
+                    placeholder="New last name"
+                  />
+                </div>
+                <div className="field-group">
+                  <label htmlFor="edit-profile-middle-name">Middle name (leave blank to keep)</label>
+                  <input
+                    id="edit-profile-middle-name"
+                    type="text"
+                    autoComplete="additional-name"
+                    value={editProfileFields.middle_name}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, middle_name: event.target.value })}
+                    placeholder="New middle name"
+                  />
+                </div>
+                {editProfileError && <p className="add-user-error" role="alert">{editProfileError}</p>}
+                <footer className="add-user-form-actions">
+                  <button type="button" disabled={isUpdatingProfile} onClick={() => setIsEditProfileOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={isUpdatingProfile}>
+                    {isUpdatingProfile ? 'Saving...' : 'Save changes'}
+                  </button>
+                </footer>
+              </form>
             </section>
           </div>
         )}

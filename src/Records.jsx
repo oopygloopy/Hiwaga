@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
-import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
 import SearchableSelect from './SearchableSelect.jsx'
 import StudentSummary from './StudentSummary.jsx'
@@ -25,6 +24,7 @@ const formatRecord = (r) => {
     id: r.record_id,
     Name: name,
     _shortName: getProfileShortLabel(r.profile, String(r.user ?? '')),
+    _userId: String(r.user ?? ''),
     Chapter: r.chapter !== null && r.chapter !== undefined ? String(r.chapter) : '-',
     Score: scoreVal !== null ? `${scoreVal.toFixed(1)}%` : '-',
     'Date & Time': dateFormatted,
@@ -390,13 +390,11 @@ export default function Records({
         </div>
       </div>
 
-      {/* Initial load: no data yet and loading */}
+      {/* Render activity feed. If no records match, show empty message. */}
       {isLoading && records.length === 0 && totalCount === 0 && !selectedChapter && !selectedSection && (
         <p>Loading records...</p>
       )}
       {error && <p className="records-error" role="alert">Unable to load records: {error}</p>}
-
-      {/* Render the table with fixed 10 rows. If no records match, show 10 "No record" rows to avoid layout shifts. */}
       {!error && (records.length > 0 || (!isLoading && totalCount === 0)) && (
         <div style={{ opacity: isLoading ? 0.5 : 1, transition: 'opacity 0.2s ease', pointerEvents: isLoading ? 'none' : 'auto' }}>
           <PaginationControls
@@ -405,20 +403,50 @@ export default function Records({
             rowCount={totalCount}
             onPageChange={setCurrentPage}
           />
-          <DataTable
-            rows={
-              records.length > 0
-                ? [
-                    ...records,
-                    ...Array.from({ length: Math.max(0, PAGE_SIZE - records.length) }, (_, i) => ({ _placeholder: true, id: `placeholder-${i}` })),
-                  ]
-                : Array.from({ length: PAGE_SIZE }, (_, i) => ({ _placeholder: true, id: `placeholder-${i}` }))
-            }
-            columns={RECORD_COLUMNS}
-            excludeColumns={['_placeholder', 'rawScore', 'rawTimestamp', 'rawCorrect', 'rawTotal']}
-            sort={sort}
-            onSort={handleSortChange}
-          />
+          {records.length === 0 ? (
+            <p>No records found.</p>
+          ) : (
+            <div className="activity-feed">
+              {records.map((record) => {
+                const score = record.rawScore
+                const scoreColor = score !== null
+                  ? (score >= 75 ? '#2f9e44' : score >= 50 ? '#d97706' : '#e03131')
+                  : 'var(--text)'
+                const dur = record['Duration (s)']
+                return (
+                  <div key={record.id} className="activity-row-item">
+                    <div className="activity-row-main">
+                      <button
+                        type="button"
+                        className="activity-feed-name-link"
+                        onClick={() => setSelectedStudentId(record._userId)}
+                        title={record.Name}
+                      >
+                        {record.Name}
+                      </button>
+                      <span className="activity-feed-chapter">Ch. {record.Chapter}</span>
+                      {dur !== null && dur !== undefined && dur !== '-' && (
+                        <span className="activity-feed-time">{dur}s</span>
+                      )}
+                    </div>
+                    <div className="activity-row-side">
+                      <span className="activity-feed-date">{record['Date & Time']}</span>
+                      <div
+                        className="activity-feed-score"
+                        style={{ backgroundColor: `${scoreColor}18`, color: scoreColor, borderColor: `${scoreColor}40` }}
+                      >
+                        {score !== null
+                          ? record.rawCorrect !== null
+                            ? `${record.rawCorrect}/${record.rawTotal} (${score.toFixed(0)}%)`
+                            : `${score.toFixed(0)}%`
+                          : '-'}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
         </>

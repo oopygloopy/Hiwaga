@@ -1,17 +1,17 @@
 # Graph Report - Hiwaga-Capstone  (2026-10-29)
 
 ## Corpus Check
-- 66 files · ~30,425 words
+- 66 files · ~31,234 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 5 file(s) not represented in the graph (top: .css 2, .example 1, (none) 1)
 
 ## Summary
-- 279 nodes · 422 edges · 45 communities (12 shown, 33 thin omitted)
+- 279 nodes · 415 edges · 44 communities (11 shown, 33 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a2a73b59`
+- Built from commit: `1185af82`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -26,7 +26,6 @@
 - Writing Guidelines for Postgres References
 - Section Definitions
 - Supabase Postgres Best Practices
-- Leaderboard.jsx
 - React + Vite
 - vite-env.d.ts
 - advanced-full-text-search.md
@@ -65,43 +64,43 @@
 ## God Nodes (most connected - your core abstractions)
 1. `react` - 15 edges
 2. `getProfileLabel()` - 15 edges
-3. `DataTable()` - 14 edges
-4. `PaginationControls()` - 13 edges
-5. `Records()` - 11 edges
-6. `getProfileUuid()` - 11 edges
+3. `PaginationControls()` - 13 edges
+4. `getProfileUuid()` - 11 edges
+5. `supabase` - 11 edges
+6. `DataTable()` - 10 edges
 7. `Overview()` - 10 edges
-8. `supabase` - 10 edges
+8. `Records()` - 10 edges
 9. `Section Definitions` - 9 edges
 10. `UserModals()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `StudentSummary()` --calls--> `DataTable()`  [EXTRACTED]
-  src/StudentSummary.jsx → src/DataTable.jsx
-- `Leaderboard()` --calls--> `PaginationControls()`  [EXTRACTED]
-  src/Leaderboard.jsx → src/PaginationControls.jsx
-- `Leaderboard()` --calls--> `getProfileLabel()`  [EXTRACTED]
-  src/Leaderboard.jsx → src/utils/formatters.js
-- `Leaderboard()` --calls--> `shortenName()`  [EXTRACTED]
-  src/Leaderboard.jsx → src/utils/formatters.js
 - `Overview()` --calls--> `getProfileLabel()`  [EXTRACTED]
   src/Overview.jsx → src/utils/formatters.js
+- `Overview()` --calls--> `getProfileUuid()`  [EXTRACTED]
+  src/Overview.jsx → src/utils/formatters.js
+- `Records()` --calls--> `PaginationControls()`  [EXTRACTED]
+  src/Records.jsx → src/PaginationControls.jsx
+- `formatRecord()` --calls--> `getProfileLabel()`  [EXTRACTED]
+  src/Records.jsx → src/utils/formatters.js
+- `Records()` --calls--> `formatCell()`  [EXTRACTED]
+  src/Records.jsx → src/utils/formatters.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (45 total, 33 thin omitted)
+## Communities (44 total, 33 thin omitted)
 
 ### Community 0 - "package.json"
 Cohesion: 0.07
-Nodes (38): dependencies, jspdf@^4.2.1, jspdf-autotable@^5.0.8, react@^19.2.8, react-dom@^19.2.8, @supabase/supabase-js@^2.116.0, devDependencies, eslint@^10.10.0 (+30 more)
+Nodes (40): dependencies, jspdf@^4.2.1, jspdf-autotable@^5.0.8, react@^19.2.8, react-dom@^19.2.8, recharts@^3.10.1, @supabase/supabase-js@^2.116.0, devDependencies (+32 more)
 
 ### Community 1 - "StudentSummary.jsx"
-Cohesion: 0.20
-Nodes (11): recharts@^3.10.1, recharts, getScoreColor(), OverallStats(), ChapterMasteryBars(), CHAPTERS, getScoreColor(), RECORD_COLUMNS (+3 more)
+Cohesion: 0.17
+Nodes (15): react, getScoreColor(), OverallStats(), formatRecord(), OverallStats, RECORD_COLUMNS, Records(), SearchableSelect() (+7 more)
 
 ### Community 2 - "Leaderboard.jsx"
-Cohesion: 0.18
-Nodes (21): react, BatchUploadModal(), DataTable(), PaginationControls(), columnLabels, Questions(), formatRecord(), OverallStats (+13 more)
+Cohesion: 0.17
+Nodes (17): BatchUploadModal(), GradeDistribution(), DataTable(), Leaderboard(), PaginationControls(), columnLabels, Questions(), Sections() (+9 more)
 
 ### Community 3 - "Overview.jsx"
 Cohesion: 0.13
@@ -131,10 +130,6 @@ Nodes (9): 1. Query Performance (query), 2. Connection Management (conn), 3. Sec
 Cohesion: 0.33
 Nodes (5): How to Use, References, Rule Categories by Priority, Supabase Postgres Best Practices, When to Apply
 
-### Community 10 - "Leaderboard.jsx"
-Cohesion: 0.36
-Nodes (3): GradeDistribution(), Leaderboard(), formatAverage()
-
 ### Community 11 - "React + Vite"
 Cohesion: 0.50
 Nodes (3): Expanding the ESLint configuration, React Compiler, React + Vite
@@ -145,12 +140,10 @@ Nodes (3): Expanding the ESLint configuration, React Compiler, React + Vite
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `Leaderboard.jsx` to `package.json`, `StudentSummary.jsx`, `Leaderboard.jsx`, `Overview.jsx`?**
-  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+- **Why does `react` connect `StudentSummary.jsx` to `package.json`, `Leaderboard.jsx`, `Overview.jsx`?**
+  _High betweenness centrality (0.074) - this node is a cross-community bridge._
 - **Should `package.json` be split into smaller, more focused modules?**
-  _Cohesion score 0.07073170731707316 - nodes in this community are weakly interconnected._
-- **Why does `recharts` connect `StudentSummary.jsx` to `package.json`, `Leaderboard.jsx`, `Overview.jsx`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+  _Cohesion score 0.06755260243632337 - nodes in this community are weakly interconnected._
 - **Should `Overview.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.12681159420289856 - nodes in this community are weakly interconnected._
 - **Should `Supabase` be split into smaller, more focused modules?**
@@ -158,4 +151,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Changelog` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `Changelog` be split into smaller, more focused modules?**
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
+- **Should `Writing Guidelines for Postgres References` be split into smaller, more focused modules?**
   _Cohesion score 0.125 - nodes in this community are weakly interconnected._

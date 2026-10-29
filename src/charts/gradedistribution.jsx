@@ -45,7 +45,7 @@ export default function GradeDistribution({ students = [] }) {
     <section className="grade-distribution-section" aria-labelledby="grade-distribution-title">
       <div className="grade-distribution-header">
         <h2 id="grade-distribution-title">Grade Distribution</h2>
-        <span className="grade-distribution-subtitle">DepEd Mastery Brackets ({validCount} students)</span>
+        <span className="grade-distribution-subtitle">Mastery Brackets ({validCount} students)</span>
       </div>
 
       <div className="grade-distribution-chart" role="img" aria-label="Student grade distribution by DepEd standards">

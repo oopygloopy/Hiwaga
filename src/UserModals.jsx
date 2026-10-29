@@ -34,6 +34,24 @@ export default function UserModals({
   deleteError,
   onDelete,
 }) {
+  const targetEditProfile = manageableProfiles.find(
+    (p) => String(getProfileUuid(p) ?? '') === String(selectedProfileUuid) ||
+           String(p.uuid ?? '') === String(selectedProfileUuid) ||
+           String(p.user_id ?? '') === String(selectedProfileUuid)
+  )
+  const editProfileName = targetEditProfile
+    ? getProfileLabel(targetEditProfile)
+    : (selectedProfileUuid || '')
+
+  const targetDeleteProfile = manageableProfiles.find(
+    (p) => String(getProfileUuid(p) ?? '') === String(selectedDeleteProfileUuid) ||
+           String(p.uuid ?? '') === String(selectedDeleteProfileUuid) ||
+           String(p.user_id ?? '') === String(selectedDeleteProfileUuid)
+  )
+  const deleteProfileName = targetDeleteProfile
+    ? getProfileLabel(targetDeleteProfile)
+    : (selectedDeleteProfileUuid || '')
+
   return (
     <>
       {isAddOpen && (
@@ -172,23 +190,30 @@ export default function UserModals({
               </button>
             </header>
             <form className="add-user-form" onSubmit={onUpdate}>
-              <div className="field-group edit-user-profile-select">
-                <label htmlFor={`edit-${entityType}-select`}>Select {entityType}</label>
-                <SearchableSelect
-                  id={`edit-${entityType}-select`}
-                  options={manageableProfiles.map((profile) => ({
-                    value: getProfileUuid(profile),
-                    label: getProfileLabel(profile),
-                  }))}
-                  value={selectedProfileUuid}
-                  onChange={(val) => {
-                    setSelectedProfileUuid(val)
-                    setEditFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
-                  }}
-                  placeholder={`Choose a ${entityType}`}
-                  required
-                />
-              </div>
+              {selectedProfileUuid ? (
+                <div className="field-group">
+                  <label>{entityType === 'student' ? 'Student' : 'Teacher'}</label>
+                  <p className="modal-readonly-target">{editProfileName}</p>
+                </div>
+              ) : (
+                <div className="field-group edit-user-profile-select">
+                  <label htmlFor={`edit-${entityType}-select`}>Select {entityType}</label>
+                  <SearchableSelect
+                    id={`edit-${entityType}-select`}
+                    options={manageableProfiles.map((profile) => ({
+                      value: getProfileUuid(profile),
+                      label: getProfileLabel(profile),
+                    }))}
+                    value={selectedProfileUuid}
+                    onChange={(val) => {
+                      setSelectedProfileUuid(val)
+                      setEditFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
+                    }}
+                    placeholder={`Choose a ${entityType}`}
+                    required
+                  />
+                </div>
+              )}
               <div className="field-group">
                 <label htmlFor={`edit-${entityType}-email`}>Email (leave blank to keep)</label>
                 <input
@@ -301,23 +326,30 @@ export default function UserModals({
               </button>
             </header>
             <form className="add-user-form" onSubmit={onDelete}>
-              <div className="field-group edit-user-profile-select">
-                <label htmlFor={`delete-${entityType}-select`}>Select {entityType}</label>
-                <SearchableSelect
-                  id={`delete-${entityType}-select`}
-                  options={manageableProfiles.map((profile) => ({
-                    value: getProfileUuid(profile),
-                    label: getProfileLabel(profile),
-                  }))}
-                  value={selectedDeleteProfileUuid}
-                  onChange={(val) => {
-                    setSelectedDeleteProfileUuid(val)
-                    setIsDeleteConfirmed(false)
-                  }}
-                  placeholder={`Choose a ${entityType}`}
-                  required
-                />
-              </div>
+              {selectedDeleteProfileUuid ? (
+                <div className="field-group">
+                  <label>{entityType === 'student' ? 'Student' : 'Teacher'}</label>
+                  <p className="modal-readonly-target">{deleteProfileName}</p>
+                </div>
+              ) : (
+                <div className="field-group edit-user-profile-select">
+                  <label htmlFor={`delete-${entityType}-select`}>Select {entityType}</label>
+                  <SearchableSelect
+                    id={`delete-${entityType}-select`}
+                    options={manageableProfiles.map((profile) => ({
+                      value: getProfileUuid(profile),
+                      label: getProfileLabel(profile),
+                    }))}
+                    value={selectedDeleteProfileUuid}
+                    onChange={(val) => {
+                      setSelectedDeleteProfileUuid(val)
+                      setIsDeleteConfirmed(false)
+                    }}
+                    placeholder={`Choose a ${entityType}`}
+                    required
+                  />
+                </div>
+              )}
               <div className="delete-user-warning">
                 <strong>Warning:</strong> Deleting a {entityType} account removes authentication and all associated records permanently. This cannot be undone.
               </div>

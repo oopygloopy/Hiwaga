@@ -13,7 +13,6 @@ import {
   YAxis,
 } from 'recharts'
 import { supabase } from '../utils/supabase'
-import SearchableSelect from '../SearchableSelect.jsx'
 
 const getScoreColor = (value) => {
   if (value >= 75) return '#2f9e44'
@@ -27,10 +26,9 @@ const formatFinishedAt = (value) => new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 }).format(new Date(value))
 
-function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
+function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) {
   const gradientId = `overall-stats-line-${useId().replaceAll(':', '')}`
   const [records, setRecords] = useState([])
-  const [selectedUser, setSelectedUser] = useState('')
   const [timeWindow, setTimeWindow] = useState({ days: 0, reference: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -69,21 +67,8 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
     }
   }, [metric, xAxis, setScoreXAxis])
 
-  const userOptions = Array.from(new Map(
-    records
-      .filter((record) => record.user !== null && record.user !== undefined && String(record.user) !== '')
-      .map((record) => {
-        const value = String(record.user)
-        const lastName = record.profile?.last_name
-        const firstName = record.profile?.first_name
-        const label = [lastName, firstName].filter(Boolean).join(', ') || value
-
-        return [value, { value, label }]
-      }),
-  ).values()).sort((first, second) => first.label.localeCompare(second.label))
-
-  const userFilteredRecords = selectedUser
-    ? records.filter((record) => String(record.user) === selectedUser)
+  const userFilteredRecords = userId
+    ? records.filter((record) => String(record.user) === userId)
     : records
 
   const filteredRecords = xAxis === 'finished_at' && timeWindow.days > 0
@@ -250,17 +235,6 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric }) {
             <option value="corr_percent">Score</option>
             <option value="total_records">Total records</option>
           </select>
-        </div>
-
-        <div className="overall-stats-user-filter">
-          <label htmlFor="overall-stats-user">for</label>
-          <SearchableSelect
-            id="overall-stats-user"
-            options={userOptions}
-            value={selectedUser}
-            onChange={setSelectedUser}
-            placeholder="All users"
-          />
         </div>
 
         <div className="overall-stats-controls">

@@ -1,10 +1,13 @@
-﻿import './App.css'
+import './App.css'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import hiwagaLogo from './assets/hiwagalogo.png'
 import facebookIcon from './assets/fb-icon.png'
 import youtubeIcon from './assets/yt-icon.png'
 import einsteinLogo from './assets/einsteinlogo.png'
+import crossedSwordsIcon from './assets/crossedswords.svg'
+import schoolIcon from './assets/school.svg'
+import chartIcon from './assets/chart.svg'
 
 const Overview = lazy(() => import('./Overview.jsx'))
 const MAX_LOGIN_ATTEMPTS = 5
@@ -15,6 +18,7 @@ function App() {
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -45,6 +49,9 @@ function App() {
         setSession(null)
         setPendingSession(null)
         setIsCheckingSession(false)
+        setEmail('')
+        setPassword('')
+        setShowPassword(false)
         return
       }
 
@@ -91,7 +98,7 @@ function App() {
       setSession(pendingSession)
       setPendingSession(null)
       setIsCheckingSession(false)
-      setIsLoginOpen(false)
+      closeLogin()
     }
 
     verifyRole()
@@ -100,6 +107,11 @@ function App() {
       isCurrent = false
     }
   }, [pendingSession])
+
+  const closeLogin = () => {
+    setIsLoginOpen(false)
+    setShowPassword(false)
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -165,7 +177,7 @@ function App() {
         <div className={`welcome-nav-menu ${isNavOpen ? 'is-open' : ''}`}>
           <nav className="welcome-navigation" aria-label="Main navigation">
             <a href="#home" onClick={() => setIsNavOpen(false)}>Home</a>
-            <a href="#about-us" onClick={() => setIsNavOpen(false)}>About</a>
+            <a href="#about" onClick={() => setIsNavOpen(false)}>About</a>
             <a href="#faq" onClick={() => setIsNavOpen(false)}>FAQ</a>
             <a href="#contact" onClick={() => setIsNavOpen(false)}>Contact</a>
           </nav>
@@ -198,12 +210,12 @@ function App() {
             href="/hiwaga.apk"
             download="Hiwaga.apk"
           >
-            ⬇ Download the Game
+            Download the Game
           </a>
         </div>
       </section>
 
-      <section className="welcome-section info-section about-section" id="about-us" aria-labelledby="about-title">
+      <section className="welcome-section info-section about-section" id="about" aria-labelledby="about-title">
         <div className="about-hero-layout">
           <div className="about-text-content">
             <p className="welcome-kicker">The story behind the adventure</p>
@@ -223,20 +235,26 @@ function App() {
         </div>
 
         <div className="about-pillars-grid">
-          <div className="about-pillar-card">
-            <span className="pillar-icon">⚔️</span>
-            <h3>Gamified Learning</h3>
-            <p>Students journey through Philippine history, engaging in turn-based combat using the power of knowledge.</p>
+          <div className="about-pillar-item">
+            <img className="pillar-image" src={crossedSwordsIcon} alt="" aria-hidden="true" />
+            <div className="pillar-text">
+              <h3>Gamified Learning</h3>
+              <p>Students journey through Philippine history, engaging in turn-based combat using the power of knowledge.</p>
+            </div>
           </div>
-          <div className="about-pillar-card">
-            <span className="pillar-icon">🏫</span>
-            <h3>School Partnership</h3>
-            <p>Made with direct collaboration with teachers at Little Einstein Discovery School to align with Grade 5 Araling Panlipunan.</p>
+          <div className="about-pillar-item">
+            <img className="pillar-image" src={schoolIcon} alt="" aria-hidden="true" />
+            <div className="pillar-text">
+              <h3>School Partnership</h3>
+              <p>Made with direct collaboration with teachers at Little Einstein Discovery School to align with Grade 5 Araling Panlipunan.</p>
+            </div>
           </div>
-          <div className="about-pillar-card">
-            <span className="pillar-icon">📊</span>
-            <h3>Teacher Monitoring</h3>
-            <p>Provides teachers with the tools to track the growth of any students playing Hiwaga through their scores within the game.</p>
+          <div className="about-pillar-item">
+            <img className="pillar-image" src={chartIcon} alt="" aria-hidden="true" />
+            <div className="pillar-text">
+              <h3>Teacher Monitoring</h3>
+              <p>Provides teachers with the tools to track the growth of any students playing Hiwaga through their scores within the game.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -299,10 +317,10 @@ function App() {
         <div
           className="login-backdrop"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !isLoading) setIsLoginOpen(false)
+            if (event.target === event.currentTarget && !isLoading) closeLogin()
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Escape' && !isLoading) setIsLoginOpen(false)
+            if (event.key === 'Escape' && !isLoading) closeLogin()
           }}
         >
           <section className="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title">
@@ -316,7 +334,7 @@ function App() {
                 type="button"
                 aria-label="Close login dialog"
                 disabled={isLoading}
-                onClick={() => setIsLoginOpen(false)}
+                onClick={closeLogin}
               >
                 ×
               </button>
@@ -339,16 +357,40 @@ function App() {
 
               <div className="field-group">
                 <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  disabled={failedAttempts >= MAX_LOGIN_ATTEMPTS}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
+                <div className="password-field-wrapper">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={password}
+                    disabled={failedAttempts >= MAX_LOGIN_ATTEMPTS}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="show-password-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    disabled={failedAttempts >= MAX_LOGIN_ATTEMPTS}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? (
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
+                        <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
+                        <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
+                        <path d="m2 2 20 20" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {error && <p className="login-error" role="alert">{error}</p>}

@@ -429,7 +429,7 @@ function Overview({ user }) {
         const [teachersResult, sectionsResult, profilesResult] = await Promise.all([
           supabase.from('teacher_view').select('*'),
           supabase.from('sections').select('id, section_name'),
-          supabase.from('profiles').select('uuid, first_name, middle_name, last_name, role'),
+          supabase.from('profiles').select('uuid, user_id, first_name, middle_name, last_name, role'),
         ])
 
         if (!isMounted) return

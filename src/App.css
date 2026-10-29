@@ -328,36 +328,34 @@
   margin-top: 20px;
 }
 
-.about-pillar-card {
+.about-pillar-item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pillar-image {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pillar-text {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 24px 20px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--card-bg, #ffffff);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: 8px;
 }
 
-.about-pillar-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-
-.pillar-icon {
-  font-size: 32px;
-  line-height: 1;
-}
-
-.about-pillar-card h3 {
+.pillar-text h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
   color: var(--text-h);
 }
 
-.about-pillar-card p {
+.pillar-text p {
   margin: 0;
   font-size: 15px;
   line-height: 1.6;
@@ -708,7 +706,7 @@
   margin: 0 auto;
 }
 
-.login-form button {
+.login-form button[type="submit"] {
   margin-top: 8px;
   padding: 12px 16px;
   border: 1px solid var(--accent);
@@ -723,21 +721,21 @@
   transition: all 0.18s ease;
 }
 
-.login-form button:hover:not(:disabled) {
+.login-form button[type="submit"]:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
 
-.login-form button:active:not(:disabled) {
+.login-form button[type="submit"]:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.login-form button:disabled {
+.login-form button[type="submit"]:disabled {
   cursor: wait;
   opacity: 0.7;
 }
 
-.login-form button:focus-visible {
+.login-form button[type="submit"]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -783,6 +781,65 @@
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.22);
+}
+
+.password-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-field-wrapper input {
+  padding-right: 44px;
+}
+
+.show-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.show-password-toggle:hover:not(:disabled) {
+  color: var(--text-h);
+  background: rgba(65, 105, 225, 0.08);
+  transform: translateY(-50%);
+}
+
+.show-password-toggle:active:not(:disabled) {
+  transform: translateY(-50%);
+}
+
+.show-password-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.show-password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.show-password-toggle svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .add-user-form {
@@ -2201,13 +2258,22 @@
 }
 
 .podium-badge {
-  font-size: 32px;
-  line-height: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 6px;
+  min-height: 48px;
 }
 
-.podium-gold .podium-badge {
-  font-size: 40px;
+.podium-medal-img {
+  width: 32px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.podium-gold .podium-medal-img {
+  width: 40px;
+  height: 53px;
 }
 
 .podium-rank {
@@ -2246,7 +2312,19 @@
   color: var(--text);
 }
 
+.name-short {
+  display: none;
+}
+
 @media (max-width: 640px) {
+  .name-full {
+    display: none;
+  }
+
+  .name-short {
+    display: inline;
+  }
+
   .leaderboard-podium {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -2265,5 +2343,242 @@
     order: 3;
   }
 }
+
+/* ==========================================================================
+   Student Summary & Chapter Mastery
+   ========================================================================== */
+
+.student-summary-selector-card {
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.student-summary-selector-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.student-summary-selector-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+  white-space: nowrap;
+}
+
+.student-summary-back-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-h);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.student-summary-back-btn:hover {
+  background: rgba(65, 105, 225, 0.08);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.student-summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.student-summary-name {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.student-summary-stats {
+  padding: 0;
+  border-bottom: none;
+}
+
+.student-summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.student-summary-section h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.chapter-mastery-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.chapter-mastery-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chapter-mastery-label {
+  width: 52px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  flex-shrink: 0;
+}
+
+.chapter-mastery-track {
+  position: relative;
+  flex: 1;
+  height: 14px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 7px;
+  overflow: visible;
+}
+
+.chapter-mastery-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.4s ease;
+}
+
+.chapter-mastery-threshold {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 75%;
+  width: 2px;
+  border-left: 2px dashed rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.chapter-mastery-value {
+  width: 72px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.chapter-mastery-plays {
+  width: 60px;
+  font-size: 12px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.chapter-mastery-legend {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+  font-style: italic;
+}
+
+/* ==========================================================================
+   Table Row Action Buttons (Edit / Delete)
+   ========================================================================== */
+
+.records-table-actions-header {
+  width: 90px;
+  text-align: center !important;
+}
+
+.records-table-actions-cell {
+  text-align: center !important;
+  white-space: nowrap;
+  width: 90px;
+}
+
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.row-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.row-action-btn img {
+  width: 16px;
+  height: 16px;
+  display: block;
+  pointer-events: none;
+}
+
+.row-action-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.row-action-edit:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(65, 105, 225, 0.12);
+  transform: translateY(-1px);
+}
+
+.row-action-edit:hover img {
+  filter: invert(32%) sepia(93%) saturate(1478%) hue-rotate(215deg) brightness(91%) contrast(93%);
+}
+
+.row-action-delete:hover {
+  border-color: #e03131;
+  color: #e03131;
+  background: rgba(224, 49, 49, 0.12);
+  transform: translateY(-1px);
+}
+
+.row-action-delete:hover img {
+  filter: invert(26%) sepia(89%) saturate(4174%) hue-rotate(347deg) brightness(91%) contrast(95%);
+}
+
+.modal-readonly-target {
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 15px;
+}
+
 
 

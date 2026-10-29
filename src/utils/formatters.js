@@ -24,6 +24,49 @@ export const getProfileLabel = (profile, fallback = '') => {
   return name || String(getProfileUuid(profile) ?? fallback)
 }
 
+export const getProfileShortLabel = (profile, fallback = '') => {
+  if (!profile) return fallback
+  const lastName = profile.last_name?.trim()
+  const firstInitial = profile.first_name?.trim()?.[0]?.toUpperCase()
+  const middleInitial = profile.middle_name?.trim()?.[0]?.toUpperCase()
+
+  const initials = [
+    firstInitial && `${firstInitial}.`,
+    middleInitial && `${middleInitial}.`,
+  ].filter(Boolean).join(' ')
+
+  const name = [lastName, initials].filter(Boolean).join(', ')
+  return name || String(getProfileUuid(profile) ?? fallback)
+}
+
+export const shortenName = (nameString) => {
+  if (!nameString || typeof nameString !== 'string') return nameString
+  const trimmed = nameString.trim()
+  if (!trimmed || trimmed === '-') return trimmed
+
+  if (trimmed.includes(',')) {
+    const [lastName, rest] = trimmed.split(',', 2).map((s) => s.trim())
+    if (!rest) return lastName
+
+    const parts = rest.split(/\s+/).filter(Boolean)
+    if (parts.length === 0) return lastName
+    const firstInitial = `${parts[0][0].toUpperCase()}.`
+    const middleInitial = parts.length > 1 ? `${parts[parts.length - 1][0].toUpperCase()}.` : ''
+
+    const initials = [firstInitial, middleInitial].filter(Boolean).join(' ')
+    return `${lastName}, ${initials}`
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean)
+  if (parts.length <= 1) return trimmed
+
+  const lastName = parts[parts.length - 1]
+  const firstInitial = `${parts[0][0].toUpperCase()}.`
+  const middleInitial = parts.length > 2 ? `${parts[parts.length - 2][0].toUpperCase()}.` : ''
+  const initials = [firstInitial, middleInitial].filter(Boolean).join(' ')
+  return `${lastName}, ${initials}`
+}
+
 export const compareRecordsByTime = (firstRecord, secondRecord, direction = -1) => {
   const firstValue = firstRecord.Time
   const secondValue = secondRecord.Time

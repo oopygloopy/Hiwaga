@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import PaginationControls from './PaginationControls.jsx'
 import GradeDistribution from './charts/gradedistribution.jsx'
-import { formatAverage, getProfileLabel } from './utils/formatters'
+import { formatAverage, getProfileLabel, shortenName } from './utils/formatters'
+import firstMedalIcon from './assets/firstplace.svg'
+import secondMedalIcon from './assets/secondplace.svg'
+import thirdMedalIcon from './assets/thirdplace.svg'
 
 export default function Leaderboard() {
   const [students, setStudents] = useState([])
@@ -205,9 +208,9 @@ export default function Leaderboard() {
 
   // Podium order: Silver (2nd) on left, Gold (1st) in center, Bronze (3rd) on right
   const podiumOrder = []
-  if (topThree.length >= 2) podiumOrder.push({ ...topThree[1], rank: 2, medal: '🥈', title: '2nd Place', cls: 'podium-silver' })
-  if (topThree.length >= 1) podiumOrder.push({ ...topThree[0], rank: 1, medal: '🥇', title: '1st Place', cls: 'podium-gold' })
-  if (topThree.length >= 3) podiumOrder.push({ ...topThree[2], rank: 3, medal: '🥉', title: '3rd Place', cls: 'podium-bronze' })
+  if (topThree.length >= 2) podiumOrder.push({ ...topThree[1], rank: 2, medalImg: secondMedalIcon, title: '2nd Place', cls: 'podium-silver' })
+  if (topThree.length >= 1) podiumOrder.push({ ...topThree[0], rank: 1, medalImg: firstMedalIcon, title: '1st Place', cls: 'podium-gold' })
+  if (topThree.length >= 3) podiumOrder.push({ ...topThree[2], rank: 3, medalImg: thirdMedalIcon, title: '3rd Place', cls: 'podium-bronze' })
 
   const getMetricDisplay = (student) => {
     if (sortBy === 'time') {
@@ -297,7 +300,9 @@ export default function Leaderboard() {
           <div className="leaderboard-podium" aria-label="Top 3 Students Podium">
             {podiumOrder.map((student) => (
               <div key={student.id} className={`podium-card ${student.cls}`}>
-                <div className="podium-badge" aria-hidden="true">{student.medal}</div>
+                <div className="podium-badge" aria-hidden="true">
+                  <img className="podium-medal-img" src={student.medalImg} alt="" />
+                </div>
                 <span className="podium-rank">{student.title}</span>
                 <span className="podium-name" title={student.name}>{student.name}</span>
                 <span className="podium-stat">{getMetricDisplay(student)}</span>
@@ -337,7 +342,10 @@ export default function Leaderboard() {
                       return (
                         <tr key={id}>
                           <td>#{actualRank}</td>
-                          <td>{name}</td>
+                          <td title={name}>
+                            <span className="name-full">{name}</span>
+                            <span className="name-short">{shortenName(name)}</span>
+                          </td>
                           <td>{formatAverage(averageGrade, '%')}</td>
                           <td>
                             {averageGrowth === null ? (

@@ -1,4 +1,4 @@
-import { formatCell, getColumns } from './utils/formatters'
+import { formatCell, getColumns, shortenName } from './utils/formatters'
 
 export default function DataTable({
   rows = [],
@@ -6,6 +6,7 @@ export default function DataTable({
   excludeColumns = [],
   sort,
   onSort,
+  rowActions,
 }) {
   const columns = visibleColumns ?? getColumns(rows, excludeColumns)
 
@@ -28,7 +29,7 @@ export default function DataTable({
                   >
                     <span>{column}</span>
                     <span style={{ fontSize: '11px', marginLeft: '4px', opacity: isCurrentSort ? 1 : 0.4 }}>
-                      {isCurrentSort ? sortIcon : ' ↕'}
+                      {isCurrentSort ? sortIcon : '↕'}
                     </span>
                   </th>
                 )
@@ -36,12 +37,17 @@ export default function DataTable({
 
               return <th key={column}>{column}</th>
             })}
+            {rowActions && (
+              <th className="records-table-actions-header">
+                <span>Actions</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={Math.max(1, columns.length)} className="records-table-empty">
+              <td colSpan={Math.max(1, columns.length + (rowActions ? 1 : 0))} className="records-table-empty">
                 No entries to display.
               </td>
             </tr>
@@ -51,7 +57,7 @@ export default function DataTable({
                 return (
                   <tr key={row.id ?? `placeholder-${index}`} aria-hidden="true">
                     <td
-                      colSpan={Math.max(1, columns.length)}
+                      colSpan={Math.max(1, columns.length + (rowActions ? 1 : 0))}
                       style={{ color: 'var(--text-muted, #aaa)', fontStyle: 'italic', textAlign: 'center' }}
                     >
                       No record
@@ -90,8 +96,25 @@ export default function DataTable({
                         )
                       }
                     }
+                    if (column === 'Name' || column === 'Student') {
+                      const fullName = formatCell(value)
+                      const shortName = row._shortName || shortenName(fullName)
+                      if (shortName && shortName !== fullName) {
+                        return (
+                          <td key={column} title={fullName}>
+                            <span className="name-full">{fullName}</span>
+                            <span className="name-short">{shortName}</span>
+                          </td>
+                        )
+                      }
+                    }
                     return <td key={column}>{formatCell(value)}</td>
                   })}
+                  {rowActions && (
+                    <td className="records-table-actions-cell">
+                      {rowActions(row)}
+                    </td>
+                  )}
                 </tr>
               )
             })

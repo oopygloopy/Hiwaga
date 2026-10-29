@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from './utils/supabase'
 import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
+import editIcon from './assets/edit.svg'
+import deleteIcon from './assets/delete.svg'
 
 export default function Sections({ onSectionsChange }) {
   const [sections, setSections] = useState([])
@@ -220,6 +222,8 @@ export default function Sections({ onSectionsChange }) {
 
   const tableRows = pageSections.map((s) => ({
     id: s.id,
+    _sectionId: s.id,
+    _sectionName: s.section_name,
     'Section Name': s.section_name,
     'Enrolled Students': studentCounts[s.id] || 0,
   }))
@@ -243,30 +247,6 @@ export default function Sections({ onSectionsChange }) {
             }}
           >
             Add section
-          </button>
-          <button
-            className="add-user-button"
-            type="button"
-            onClick={() => {
-              setMutationError('')
-              setEditSectionId('')
-              setEditSectionName('')
-              setDialog('edit')
-            }}
-          >
-            Edit section
-          </button>
-          <button
-            className="delete-user-button"
-            type="button"
-            onClick={() => {
-              setMutationError('')
-              setDeleteSectionId('')
-              setIsDeleteConfirmed(false)
-              setDialog('delete')
-            }}
-          >
-            Delete section
           </button>
         </div>
       </div>
@@ -315,6 +295,38 @@ export default function Sections({ onSectionsChange }) {
             columns={['Section Name', 'Enrolled Students']}
             sort={sort}
             onSort={handleSortChange}
+            rowActions={(row) => (
+              <div className="row-actions">
+                <button
+                  type="button"
+                  className="row-action-btn row-action-edit"
+                  title="Edit section"
+                  aria-label={`Edit ${row['Section Name']}`}
+                  onClick={() => {
+                    setMutationError('')
+                    setEditSectionId(String(row._sectionId))
+                    setEditSectionName(row._sectionName)
+                    setDialog('edit')
+                  }}
+                >
+                  <img src={editIcon} alt="" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="row-action-btn row-action-delete"
+                  title="Delete section"
+                  aria-label={`Delete ${row['Section Name']}`}
+                  onClick={() => {
+                    setMutationError('')
+                    setDeleteSectionId(String(row._sectionId))
+                    setIsDeleteConfirmed(false)
+                    setDialog('delete')
+                  }}
+                >
+                  <img src={deleteIcon} alt="" aria-hidden="true" />
+                </button>
+              </div>
+            )}
           />
         </>
       )}
@@ -392,24 +404,9 @@ export default function Sections({ onSectionsChange }) {
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleEditSection}>
-              <div className="field-group edit-user-profile-select">
-                <label htmlFor="edit-section-select">Select section</label>
-                <select
-                  id="edit-section-select"
-                  value={editSectionId}
-                  onChange={(event) => {
-                    const secId = event.target.value
-                    setEditSectionId(secId)
-                    const found = sections.find((s) => String(s.id) === String(secId))
-                    setEditSectionName(found ? found.section_name : '')
-                  }}
-                  required
-                >
-                  <option value="" disabled>Choose a section</option>
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>{s.section_name}</option>
-                  ))}
-                </select>
+              <div className="field-group">
+                <label>Section</label>
+                <p className="modal-readonly-target">{editSectionName}</p>
               </div>
               <div className="field-group">
                 <label htmlFor="edit-section-name">New section name</label>
@@ -460,22 +457,9 @@ export default function Sections({ onSectionsChange }) {
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleDeleteSection}>
-              <div className="field-group edit-user-profile-select">
-                <label htmlFor="delete-section-select">Select section</label>
-                <select
-                  id="delete-section-select"
-                  value={deleteSectionId}
-                  onChange={(event) => {
-                    setDeleteSectionId(event.target.value)
-                    setIsDeleteConfirmed(false)
-                  }}
-                  required
-                >
-                  <option value="" disabled>Choose a section</option>
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>{s.section_name}</option>
-                  ))}
-                </select>
+              <div className="field-group">
+                <label>Section</label>
+                <p className="modal-readonly-target">{selectedDeleteSection?.section_name || 'Selected Section'}</p>
               </div>
 
               {deleteSectionId && deleteCount > 0 && (

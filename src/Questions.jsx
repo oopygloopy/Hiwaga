@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from './utils/supabase'
 import PaginationControls from './PaginationControls.jsx'
 import { formatCell } from './utils/formatters'
+import editIcon from './assets/edit.svg'
+import deleteIcon from './assets/delete.svg'
 
 const columnLabels = {
   question: 'Question',
@@ -64,19 +66,6 @@ export default function Questions() {
     setQuestionFields({ question: '', right_answer: '', wrong_answers: '' })
     setMutationError('')
     setIsDeleteConfirmed(false)
-  }
-
-  const openEditDialog = () => {
-    setMutationError('')
-    setSelectedQuestionId('')
-    setQuestionFields({ question: '', right_answer: '', wrong_answers: '' })
-    setDialog('edit')
-  }
-
-  const handleQuestionSelection = (event) => {
-    const questionId = event.target.value
-    setSelectedQuestionId(questionId)
-    setQuestionFields({ question: '', right_answer: '', wrong_answers: '' })
   }
 
   const handleSaveQuestion = async (event) => {
@@ -167,17 +156,6 @@ export default function Questions() {
           }}>
             Add question
           </button>
-          <button className="add-user-button" type="button" onClick={openEditDialog}>
-            Edit question
-          </button>
-          <button className="delete-user-button" type="button" onClick={() => {
-            setMutationError('')
-            setSelectedQuestionId('')
-            setIsDeleteConfirmed(false)
-            setDialog('delete')
-          }}>
-            Delete question
-          </button>
         </div>
       </div>
       {isLoading && <p>Loading questions...</p>}
@@ -194,12 +172,53 @@ export default function Questions() {
           <div className="records-table-wrapper">
             <table className="records-table">
               <thead>
-                <tr>{columns.map((column) => <th key={column}>{columnLabels[column] ?? column}</th>)}</tr>
+                <tr>
+                  {columns.map((column) => <th key={column}>{columnLabels[column] ?? column}</th>)}
+                  <th className="records-table-actions-header"><span>Actions</span></th>
+                </tr>
               </thead>
               <tbody>
                 {pageQuestions.map((question, index) => (
                   <tr key={question.id ?? (page - 1) * 10 + index}>
                     {columns.map((column) => <td key={column}>{formatCell(question[column])}</td>)}
+                    <td className="records-table-actions-cell">
+                      <div className="row-actions">
+                        <button
+                          type="button"
+                          className="row-action-btn row-action-edit"
+                          title="Edit question"
+                          aria-label="Edit question"
+                          onClick={() => {
+                            setMutationError('')
+                            setSelectedQuestionId(String(question.id))
+                            setQuestionFields({
+                              question: question.question || '',
+                              right_answer: question.right_answer || '',
+                              wrong_answers: Array.isArray(question.wrong_answers)
+                                ? question.wrong_answers.join('\n')
+                                : String(question.wrong_answers || ''),
+                            })
+                            setDialog('edit')
+                          }}
+                        >
+                          <img src={editIcon} alt="" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="row-action-btn row-action-delete"
+                          title="Delete question"
+                          aria-label="Delete question"
+                          onClick={() => {
+                            setMutationError('')
+                            setSelectedQuestionId(String(question.id))
+                            setIsDeleteConfirmed(false)
+                            setDialog('delete')
+                          }}
+                        >
+                          <img src={deleteIcon} alt="" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -226,14 +245,11 @@ export default function Questions() {
             </header>
             <form className="add-user-form" onSubmit={handleSaveQuestion}>
               {dialog === 'edit' && (
-                <div className="field-group edit-user-profile-select">
-                  <label htmlFor="edit-question-id">Question</label>
-                  <select id="edit-question-id" value={selectedQuestionId} onChange={handleQuestionSelection} required>
-                    <option value="" disabled>Select a question</option>
-                    {questions.map((question) => (
-                      <option key={question.id} value={question.id}>{question.question}</option>
-                    ))}
-                  </select>
+                <div className="field-group">
+                  <label>Selected Question</label>
+                  <p className="modal-readonly-target">
+                    {questions.find((question) => String(question.id) === String(selectedQuestionId))?.question || 'Selected Question'}
+                  </p>
                 </div>
               )}
               <div className="field-group edit-user-profile-select">
@@ -298,29 +314,15 @@ export default function Questions() {
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleDeleteQuestion}>
-              <div className="field-group edit-user-profile-select">
-                <label htmlFor="delete-question-id">Question</label>
-                <select
-                  id="delete-question-id"
-                  value={selectedQuestionId}
-                  onChange={(event) => {
-                    setSelectedQuestionId(event.target.value)
-                    setIsDeleteConfirmed(false)
-                    setMutationError('')
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select a question</option>
-                  {questions.map((question) => (
-                    <option key={question.id} value={question.id}>{question.question}</option>
-                  ))}
-                </select>
-              </div>
-              {selectedQuestionId && (
-                <p className="delete-user-warning">
-                  This permanently deletes "{questions.find((question) => String(question.id) === selectedQuestionId)?.question}" and cannot be undone.
+              <div className="field-group">
+                <label>Question</label>
+                <p className="modal-readonly-target">
+                  {questions.find((question) => String(question.id) === selectedQuestionId)?.question || 'Selected Question'}
                 </p>
-              )}
+              </div>
+              <p className="delete-user-warning">
+                This permanently deletes this question and cannot be undone.
+              </p>
               <label className="delete-user-confirmation">
                 <input
                   type="checkbox"

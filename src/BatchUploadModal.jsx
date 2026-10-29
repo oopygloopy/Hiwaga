@@ -242,7 +242,7 @@ export default function BatchUploadModal({ isOpen, onClose, sections = [], onSuc
                 onClick={downloadTemplate}
                 style={{ fontSize: '13px', padding: '6px 14px' }}
               >
-                📥 Download CSV Template
+                Download CSV Template
               </button>
             </div>
           </div>
@@ -281,7 +281,7 @@ export default function BatchUploadModal({ isOpen, onClose, sections = [], onSuc
               border: `1px solid ${uploadResults.failed === 0 ? '#2f9e44' : '#f59f00'}`
             }}>
               <p style={{ margin: '0 0 6px', fontWeight: 700, color: uploadResults.failed === 0 ? '#2f9e44' : '#d97706' }}>
-                ✅ {uploadResults.success} students successfully added!
+                {uploadResults.success} {uploadResults.success === 1 ? 'student' : 'students'} successfully added.
                 {uploadResults.failed > 0 && ` (${uploadResults.failed} failed)`}
               </p>
               {uploadResults.failureDetails.length > 0 && (

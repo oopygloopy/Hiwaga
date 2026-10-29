@@ -3,7 +3,8 @@ import { supabase } from './utils/supabase'
 import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
 import SearchableSelect from './SearchableSelect.jsx'
-import { formatCell, getProfileLabel } from './utils/formatters'
+import StudentSummary from './StudentSummary.jsx'
+import { formatCell, getProfileLabel, getProfileShortLabel } from './utils/formatters'
 
 const OverallStats = lazy(() => import('./charts/overallstats.jsx'))
 
@@ -23,6 +24,7 @@ const formatRecord = (r) => {
   return {
     id: r.record_id,
     Name: name,
+    _shortName: getProfileShortLabel(r.profile, String(r.user ?? '')),
     Chapter: r.chapter !== null && r.chapter !== undefined ? String(r.chapter) : '-',
     Score: scoreVal !== null ? `${scoreVal.toFixed(1)}%` : '-',
     'Date & Time': dateFormatted,
@@ -44,7 +46,7 @@ export default function Records({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [sort, setSort] = useState({ column: 'Date & Time', direction: -1 })
-  const [selectedUser, setSelectedUser] = useState('')
+  const [selectedStudentId, setSelectedStudentId] = useState('')
   const [selectedChapter, setSelectedChapter] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
   const [allUsers, setAllUsers] = useState([])
@@ -121,10 +123,6 @@ export default function Records({
           { count: 'exact' }
         )
 
-      if (selectedUser) {
-        query = query.eq('user', selectedUser)
-      }
-
       if (selectedChapter) {
         query = query.eq('chapter', selectedChapter)
       }
@@ -176,10 +174,17 @@ export default function Records({
     return () => {
       isMounted = false
     }
-  }, [currentPage, sort, selectedUser, selectedChapter, selectedSection])
+  }, [currentPage, sort, selectedChapter, selectedSection])
 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const page = Math.min(currentPage, pageCount)
+
+  const selectedStudentProfile = allUsers.find((p) => String(p.user_id) === String(selectedStudentId))
+  const selectedStudentName = selectedStudentProfile
+    ? getProfileLabel(selectedStudentProfile, String(selectedStudentId))
+    : 'Student'
+  const selectedStudentSection = selectedStudentProfile?.section_rel?.section_name
+    || (selectedStudentProfile?.section !== null && selectedStudentProfile?.section !== undefined ? String(selectedStudentProfile.section) : '')
 
   const handleSortChange = (column) => {
     setSort((prev) => {
@@ -196,7 +201,6 @@ export default function Records({
       .from('records')
       .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name, section, section_rel:sections!section(section_name))')
 
-    if (selectedUser) query = query.eq('user', selectedUser)
     if (selectedChapter) query = query.eq('chapter', selectedChapter)
 
     const isAsc = sort.direction === 1
@@ -288,63 +292,83 @@ export default function Records({
   return (
     <div className="dashboard-content">
       <p className="view-hint">Shows details of every record played.</p>
-      <Suspense fallback={<p className="view-hint" role="status">Loading chart...</p>}>
-        <OverallStats
-          xAxis={scoreXAxis}
-          setScoreXAxis={setScoreXAxis}
-          metric={chartMetric}
-          setMetric={setChartMetric}
-        />
-      </Suspense>
-
-      <div className="records-toolbar">
-        <div className="records-filter-controls">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '190px' }}>
-            <span>User</span>
+      <div className="student-summary-selector-card">
+        <div className="student-summary-selector-inner">
+          <label htmlFor="student-summary-select" className="student-summary-selector-label">
+            <span>Student Summary</span>
+          </label>
+          <div style={{ flex: 1, minWidth: '220px', maxWidth: '380px' }}>
             <SearchableSelect
+              id="student-summary-select"
               options={userOptions}
-              value={selectedUser}
-              onChange={(val) => {
-                setSelectedUser(val)
-                setCurrentPage(1)
-              }}
-              placeholder="All users"
+              value={selectedStudentId}
+              onChange={(val) => setSelectedStudentId(val)}
+              placeholder="Search or select a student..."
             />
           </div>
-
-          <label>
-            Chapter
-            <select
-              value={selectedChapter}
-              onChange={(event) => {
-                setSelectedChapter(event.target.value)
-                setCurrentPage(1)
-              }}
+          {selectedStudentId && (
+            <button
+              type="button"
+              className="student-summary-back-btn"
+              onClick={() => setSelectedStudentId('')}
             >
-              <option value="">All chapters</option>
-              {chapterOptions.map((chapter) => (
-                <option key={chapter} value={chapter}>{chapter}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Section
-            <select
-              value={selectedSection}
-              onChange={(event) => {
-                setSelectedSection(event.target.value)
-                setSelectedUser('') // Reset selected user when section changes
-                setCurrentPage(1)
-              }}
-            >
-              <option value="">All sections</option>
-              {sections.map(({ id, section_name }) => (
-                <option key={id} value={section_name}>{section_name}</option>
-              ))}
-            </select>
-          </label>
+              ← Back to All Records
+            </button>
+          )}
         </div>
+      </div>
+
+      {selectedStudentId ? (
+        <StudentSummary
+          userId={selectedStudentId}
+          userName={selectedStudentName}
+          section={selectedStudentSection}
+        />
+      ) : (
+        <>
+          <Suspense fallback={<p className="view-hint" role="status">Loading chart...</p>}>
+            <OverallStats
+              xAxis={scoreXAxis}
+              setScoreXAxis={setScoreXAxis}
+              metric={chartMetric}
+              setMetric={setChartMetric}
+            />
+          </Suspense>
+
+          <div className="records-toolbar">
+            <div className="records-filter-controls">
+              <label>
+                Chapter
+                <select
+                  value={selectedChapter}
+                  onChange={(event) => {
+                    setSelectedChapter(event.target.value)
+                    setCurrentPage(1)
+                  }}
+                >
+                  <option value="">All chapters</option>
+                  {chapterOptions.map((chapter) => (
+                    <option key={chapter} value={chapter}>{chapter}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Section
+                <select
+                  value={selectedSection}
+                  onChange={(event) => {
+                    setSelectedSection(event.target.value)
+                    setCurrentPage(1)
+                  }}
+                >
+                  <option value="">All sections</option>
+                  {sections.map(({ id, section_name }) => (
+                    <option key={id} value={section_name}>{section_name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
@@ -367,7 +391,7 @@ export default function Records({
       </div>
 
       {/* Initial load: no data yet and loading */}
-      {isLoading && records.length === 0 && totalCount === 0 && !selectedUser && !selectedChapter && !selectedSection && (
+      {isLoading && records.length === 0 && totalCount === 0 && !selectedChapter && !selectedSection && (
         <p>Loading records...</p>
       )}
       {error && <p className="records-error" role="alert">Unable to load records: {error}</p>}
@@ -396,6 +420,8 @@ export default function Records({
             onSort={handleSortChange}
           />
         </div>
+      )}
+        </>
       )}
     </div>
   )

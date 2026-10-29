@@ -3,6 +3,9 @@ import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
 import UserModals from './UserModals.jsx'
 import BatchUploadModal from './BatchUploadModal.jsx'
+import { getProfileLabel, getProfileUuid } from './utils/formatters'
+import editIcon from './assets/edit.svg'
+import deleteIcon from './assets/delete.svg'
 
 export default function Students({
   students,
@@ -56,6 +59,85 @@ export default function Students({
   const page = Math.min(currentPage, pageCount)
   const pageStudents = sortedStudents.slice((page - 1) * 10, page * 10)
 
+  const getProfileForRow = (row) => {
+    if (!row) return null
+
+    // 1. Direct uuid match
+    const directUuid = row.uuid || row.UUID
+    if (directUuid) {
+      const match = manageableProfiles.find((p) => String(p.uuid) === String(directUuid))
+      if (match) return match
+    }
+
+    // 2. ID-based match (user_id, id, ID, User ID, user, etc.)
+    const possibleIds = [
+      row.user_id,
+      row.id,
+      row.ID,
+      row.userId,
+      row.UserId,
+      row['user_id'],
+      row['User ID'],
+      row['User Id'],
+      row.user,
+      row.User,
+    ].filter((v) => v !== undefined && v !== null && v !== '')
+
+    for (const idVal of possibleIds) {
+      const idStr = String(idVal).trim()
+      const match = manageableProfiles.find(
+        (p) => String(p.user_id) === idStr ||
+               String(p.id) === idStr ||
+               String(p.uuid) === idStr
+      )
+      if (match) return match
+    }
+
+    // 3. Name-based match with normalization
+    const rowName = String(row.Name ?? row.name ?? row.Student ?? row.student ?? '').trim()
+    if (rowName) {
+      const cleanRowName = rowName.toLowerCase().replace(/[,.]/g, ' ').replace(/\s+/g, ' ').trim()
+      const rowTokens = cleanRowName.split(' ').filter(Boolean).sort()
+
+      for (const p of manageableProfiles) {
+        const f = (p.first_name || '').toLowerCase().trim()
+        const l = (p.last_name || '').toLowerCase().trim()
+        const m = (p.middle_name || '').toLowerCase().trim()
+
+        const nameVariants = [
+          `${f} ${l}`,
+          `${l} ${f}`,
+          `${f} ${m} ${l}`,
+          `${l} ${f} ${m}`,
+          `${f} ${m ? m[0] : ''} ${l}`,
+          `${l} ${f} ${m ? m[0] : ''}`,
+          getProfileLabel(p).toLowerCase(),
+        ].map((n) => n.replace(/[,.]/g, ' ').replace(/\s+/g, ' ').trim())
+
+        if (nameVariants.includes(cleanRowName)) {
+          return p
+        }
+
+        // Token match: if both first and last name tokens are in the row name
+        if (f && l) {
+          const profileTokens = `${f} ${l}`.split(' ').filter(Boolean).sort()
+          if (profileTokens.every((t) => rowTokens.includes(t))) {
+            return p
+          }
+        }
+      }
+    }
+
+    return null
+  }
+
+  const getUuidForRow = (row) => {
+    const profile = getProfileForRow(row)
+    if (profile?.uuid) return profile.uuid
+    if (getProfileUuid(profile)) return getProfileUuid(profile)
+    return row.uuid ?? row.UUID ?? row.user_id ?? row.id ?? ''
+  }
+
   return (
     <div className="dashboard-content">
       <p className="view-hint">Lists the name, section, and the last activity of every student.</p>
@@ -73,22 +155,6 @@ export default function Students({
             onClick={() => setIsBatchUploadOpen(true)}
           >
             Batch upload
-          </button>
-          <button className="add-user-button" type="button" onClick={() => {
-            setUpdateStudentError('')
-            setSelectedProfileUuid('')
-            setEditStudentFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
-            setIsEditStudentOpen(true)
-          }}>
-            Edit student
-          </button>
-          <button className="delete-user-button" type="button" onClick={() => {
-            setDeleteStudentError('')
-            setSelectedDeleteProfileUuid('')
-            setIsDeleteConfirmed(false)
-            setIsDeleteStudentOpen(true)
-          }}>
-            Delete student
           </button>
         </div>
       </div>
@@ -123,7 +189,43 @@ export default function Students({
             rowCount={filteredStudents.length}
             onPageChange={setCurrentPage}
           />
-          <DataTable rows={pageStudents} />
+          <DataTable
+            rows={pageStudents}
+            rowActions={(row) => (
+              <div className="row-actions">
+                <button
+                  type="button"
+                  className="row-action-btn row-action-edit"
+                  title="Edit student"
+                  aria-label={`Edit ${row.Name || 'student'}`}
+                  onClick={() => {
+                    const uuid = getUuidForRow(row)
+                    setUpdateStudentError('')
+                    setSelectedProfileUuid(uuid)
+                    setEditStudentFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
+                    setIsEditStudentOpen(true)
+                  }}
+                >
+                  <img src={editIcon} alt="" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="row-action-btn row-action-delete"
+                  title="Delete student"
+                  aria-label={`Delete ${row.Name || 'student'}`}
+                  onClick={() => {
+                    const uuid = getUuidForRow(row)
+                    setDeleteStudentError('')
+                    setSelectedDeleteProfileUuid(uuid)
+                    setIsDeleteConfirmed(false)
+                    setIsDeleteStudentOpen(true)
+                  }}
+                >
+                  <img src={deleteIcon} alt="" aria-hidden="true" />
+                </button>
+              </div>
+            )}
+          />
         </>
       )}
 

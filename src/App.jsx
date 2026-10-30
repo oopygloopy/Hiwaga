@@ -208,8 +208,8 @@ function App() {
           </div>
           <a
             className="home-download-btn"
-            href="downloads/HIWAGA.apk"
-            download
+            href="https://media.githubusercontent.com/media/oopygloopy/Hiwaga/main/public/downloads/HIWAGA.apk"
+            download="HIWAGA.apk"
           >
             Download the Game
           </a>

@@ -2226,6 +2226,28 @@
   white-space: nowrap;
 }
 
+@media (max-width: 640px) {
+  .activity-row-item {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .activity-row-main {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .activity-row-side {
+    flex: 1 1 100%;
+    flex-shrink: 1;
+    justify-content: space-between;
+    white-space: normal;
+  }
+  .activity-feed-name-link {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}
+
 .activity-feed-meta {
   display: flex;
   align-items: center;

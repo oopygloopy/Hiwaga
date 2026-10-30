@@ -26,9 +26,11 @@ const formatFinishedAt = (value) => new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
 }).format(new Date(value))
 
-function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) {
+function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', sections = [] }) {
   const gradientId = `overall-stats-line-${useId().replaceAll(':', '')}`
   const [records, setRecords] = useState([])
+  const [internalSections, setInternalSections] = useState([])
+  const [selectedSection, setSelectedSection] = useState('')
   const [timeWindow, setTimeWindow] = useState({ days: 0, reference: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -39,7 +41,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) 
     const loadRecords = async () => {
       const { data, error: queryError } = await supabase
         .from('records')
-        .select('finished_at, chapter, corr_percent, user, profile:profiles!user(last_name, first_name)')
+        .select('finished_at, chapter, corr_percent, user, profile:profiles!user(last_name, first_name, section, section_rel:sections!section(section_name))')
         .order('finished_at', { ascending: true })
 
       if (!isMounted) return
@@ -60,6 +62,27 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) 
     }
   }, [])
 
+  useEffect(() => {
+    if (sections && sections.length > 0) return
+    let isMounted = true
+
+    supabase
+      .from('sections')
+      .select('id, section_name')
+      .order('section_name', { ascending: true })
+      .then(({ data }) => {
+        if (isMounted && data) {
+          setInternalSections(
+            data.filter((s) => s.id !== null && s.section_name && String(s.section_name).trim() !== '')
+          )
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [sections])
+
   // Auto-switch to 'attempt' if user was on 'finished_at' and chooses 'corr_percent'
   useEffect(() => {
     if (metric === 'corr_percent' && xAxis === 'finished_at') {
@@ -71,13 +94,21 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) 
     ? records.filter((record) => String(record.user) === userId)
     : records
 
-  const filteredRecords = xAxis === 'finished_at' && timeWindow.days > 0
+  const sectionFilteredRecords = selectedSection
     ? userFilteredRecords.filter((record) => {
+      const sec = record.profile?.section_rel?.section_name
+        || (record.profile?.section !== null && record.profile?.section !== undefined ? String(record.profile.section) : '')
+      return String(sec).trim().toLowerCase() === selectedSection.trim().toLowerCase()
+    })
+    : userFilteredRecords
+
+  const filteredRecords = xAxis === 'finished_at' && timeWindow.days > 0
+    ? sectionFilteredRecords.filter((record) => {
       const finishedAt = Date.parse(record.finished_at)
       return Number.isFinite(finishedAt)
         && finishedAt >= timeWindow.reference - timeWindow.days * 24 * 60 * 60 * 1000
     })
-    : userFilteredRecords
+    : sectionFilteredRecords
 
   const isChapterScoreProgression = xAxis === 'chapter' && metric === 'corr_percent'
 
@@ -85,7 +116,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) 
     // Specialized Chapter view for scores: First Attempt vs. Latest Attempt
     if (isChapterScoreProgression) {
       const userChapterPlays = new Map()
-      for (const record of userFilteredRecords) {
+      for (const record of sectionFilteredRecords) {
         if (record.chapter === null || record.chapter === undefined) continue
         const key = `${record.user}:::${record.chapter}`
         if (!userChapterPlays.has(key)) userChapterPlays.set(key, [])
@@ -256,6 +287,20 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '' }) 
                 <option value="attempt">Attempts</option>
               </>
             )}
+          </select>
+        </div>
+
+        <div className="overall-stats-controls">
+          <label htmlFor="overall-stats-section">Section</label>
+          <select
+            id="overall-stats-section"
+            value={selectedSection}
+            onChange={(event) => setSelectedSection(event.target.value)}
+          >
+            <option value="">All sections</option>
+            {(sections && sections.length > 0 ? sections : internalSections).map(({ id, section_name }) => (
+              <option key={id} value={section_name}>{section_name}</option>
+            ))}
           </select>
         </div>
 

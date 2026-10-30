@@ -45,7 +45,7 @@ export default function Records({
   const [currentPage, setCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [sort, setSort] = useState({ column: 'Date & Time', direction: -1 })
+  const [sort] = useState({ column: 'Date & Time', direction: -1 })
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [selectedChapter, setSelectedChapter] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
@@ -186,16 +186,6 @@ export default function Records({
   const selectedStudentSection = selectedStudentProfile?.section_rel?.section_name
     || (selectedStudentProfile?.section !== null && selectedStudentProfile?.section !== undefined ? String(selectedStudentProfile.section) : '')
 
-  const handleSortChange = (column) => {
-    setSort((prev) => {
-      if (prev.column === column) {
-        return { column, direction: prev.direction === 1 ? -1 : 1 }
-      }
-      return { column, direction: -1 }
-    })
-    setCurrentPage(1)
-  }
-
   const fetchExportRecords = async () => {
     let query = supabase
       .from('records')
@@ -332,6 +322,7 @@ export default function Records({
               setScoreXAxis={setScoreXAxis}
               metric={chartMetric}
               setMetric={setChartMetric}
+              sections={sections}
             />
           </Suspense>
 

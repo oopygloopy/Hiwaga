@@ -3,7 +3,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart,
@@ -82,10 +81,10 @@ export default function StudentSummary({ userId, userName, section = '' }) {
     if (!userId) return
 
     let isMounted = true
-    setIsLoading(true)
-    setError('')
 
     const fetchStudentRecords = async () => {
+      setIsLoading(true)
+      setError('')
       const { data, error: queryError } = await supabase
         .from('records')
         .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter')
@@ -181,12 +180,6 @@ export default function StudentSummary({ userId, userName, section = '' }) {
 
   const growth = growthCount ? totalGrowthSum / growthCount : null
 
-  // Best/Weakest chapter by latest avg
-  const rankedChapters = Array.from(chapterStats.values()).filter((s) => s.latestAvg !== null)
-  rankedChapters.sort((a, b) => b.latestAvg - a.latestAvg)
-  const bestChapter = rankedChapters[0] ?? null
-  const weakestChapter = rankedChapters[rankedChapters.length - 1] ?? null
-
   // ── Learning progression chart data ────────────────────────────────────────
   const progressionData = Array.from(chapterStats.values())
     .filter((s) => s.initialAvg !== null)
@@ -197,18 +190,14 @@ export default function StudentSummary({ userId, userName, section = '' }) {
     })
 
   // ── Score by attempt (line chart) ─────────────────────────────────────────
-  let globalAttempt = 0
   const attemptData = records
     .filter((r) => r.corr_percent !== null && Number.isFinite(Number(r.corr_percent)))
-    .map((r) => {
-      globalAttempt += 1
-      return {
-        attempt: globalAttempt,
-        score: Number(Number(r.corr_percent).toFixed(1)),
-        chapter: r.chapter,
-        date: r.finished_at ? new Intl.DateTimeFormat(undefined, { dateStyle: 'short' }).format(new Date(r.finished_at)) : '',
-      }
-    })
+    .map((r, index) => ({
+      attempt: index + 1,
+      score: Number(Number(r.corr_percent).toFixed(1)),
+      chapter: r.chapter,
+      date: r.finished_at ? new Intl.DateTimeFormat(undefined, { dateStyle: 'short' }).format(new Date(r.finished_at)) : '',
+    }))
 
   return (
     <section className="student-summary-panel" aria-labelledby="student-summary-title">

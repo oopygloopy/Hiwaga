@@ -79,32 +79,6 @@ export default function UserModals({
             </header>
             <form className="add-user-form" onSubmit={onCreate}>
               <div className="field-group">
-                <label htmlFor={`new-${entityType}-email`}>Email</label>
-                <input
-                  id={`new-${entityType}-email`}
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={newUser.email}
-                  onChange={(event) => setNewUser({ ...newUser, email: event.target.value })}
-                  required
-                />
-              </div>
-              {entityType !== 'teacher' && (
-                <div className="field-group">
-                  <label htmlFor={`new-${entityType}-password`}>Password</label>
-                  <input
-                    id={`new-${entityType}-password`}
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={newUser.password}
-                    onChange={(event) => setNewUser({ ...newUser, password: event.target.value })}
-                    required
-                  />
-                </div>
-              )}
-              <div className="field-group">
                 <label htmlFor={`new-${entityType}-first-name`}>First name</label>
                 <input
                   id={`new-${entityType}-first-name`}
@@ -154,6 +128,32 @@ export default function UserModals({
                   ))}
                 </select>
               </div>
+              <div className="field-group field-full-width">
+                <label htmlFor={`new-${entityType}-email`}>Email</label>
+                <input
+                  id={`new-${entityType}-email`}
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={newUser.email}
+                  onChange={(event) => setNewUser({ ...newUser, email: event.target.value })}
+                  required
+                />
+              </div>
+              {entityType !== 'teacher' && (
+                <div className="field-group field-full-width">
+                  <label htmlFor={`new-${entityType}-password`}>Password</label>
+                  <input
+                    id={`new-${entityType}-password`}
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={newUser.password}
+                    onChange={(event) => setNewUser({ ...newUser, password: event.target.value })}
+                    required
+                  />
+                </div>
+              )}
               {createError && <p className="add-user-error" role="alert">{createError}</p>}
               <footer className="add-user-form-actions">
                 <button type="button" disabled={isCreating} onClick={() => setIsAddOpen(false)}>
@@ -212,31 +212,7 @@ export default function UserModals({
                 </div>
               )}
               <div className="field-group">
-                <label htmlFor={`edit-${entityType}-email`}>Email (leave blank to keep)</label>
-                <input
-                  id={`edit-${entityType}-email`}
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={editFields.email}
-                  onChange={(event) => setEditFields({ ...editFields, email: event.target.value })}
-                  placeholder="New email"
-                />
-              </div>
-              <div className="field-group">
-                <label htmlFor={`edit-${entityType}-password`}>Password (leave blank to keep)</label>
-                <input
-                  id={`edit-${entityType}-password`}
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={editFields.password}
-                  onChange={(event) => setEditFields({ ...editFields, password: event.target.value })}
-                  placeholder="New password"
-                />
-              </div>
-              <div className="field-group">
-                <label htmlFor={`edit-${entityType}-first-name`}>First name (leave blank to keep)</label>
+                <label htmlFor={`edit-${entityType}-first-name`}>First name</label>
                 <input
                   id={`edit-${entityType}-first-name`}
                   name="first_name"
@@ -244,11 +220,11 @@ export default function UserModals({
                   autoComplete="given-name"
                   value={editFields.first_name}
                   onChange={(event) => setEditFields({ ...editFields, first_name: event.target.value })}
-                  placeholder="New first name"
+                  placeholder="Leave unchanged"
                 />
               </div>
               <div className="field-group">
-                <label htmlFor={`edit-${entityType}-last-name`}>Last name (leave blank to keep)</label>
+                <label htmlFor={`edit-${entityType}-last-name`}>Last name</label>
                 <input
                   id={`edit-${entityType}-last-name`}
                   name="last_name"
@@ -256,11 +232,11 @@ export default function UserModals({
                   autoComplete="family-name"
                   value={editFields.last_name}
                   onChange={(event) => setEditFields({ ...editFields, last_name: event.target.value })}
-                  placeholder="New last name"
+                  placeholder="Leave unchanged"
                 />
               </div>
               <div className="field-group">
-                <label htmlFor={`edit-${entityType}-middle-name`}>Middle name (leave blank to keep)</label>
+                <label htmlFor={`edit-${entityType}-middle-name`}>Middle name</label>
                 <input
                   id={`edit-${entityType}-middle-name`}
                   name="middle_name"
@@ -268,11 +244,11 @@ export default function UserModals({
                   autoComplete="additional-name"
                   value={editFields.middle_name}
                   onChange={(event) => setEditFields({ ...editFields, middle_name: event.target.value })}
-                  placeholder="New middle name"
+                  placeholder="Leave unchanged"
                 />
               </div>
               <div className="field-group">
-                <label htmlFor={`edit-${entityType}-section`}>Section (leave blank to keep)</label>
+                <label htmlFor={`edit-${entityType}-section`}>Section</label>
                 <select
                   id={`edit-${entityType}-section`}
                   name="section"
@@ -284,6 +260,30 @@ export default function UserModals({
                     <option key={id} value={id}>{section_name}</option>
                   ))}
                 </select>
+              </div>
+              <div className="field-group field-full-width">
+                <label htmlFor={`edit-${entityType}-email`}>Email</label>
+                <input
+                  id={`edit-${entityType}-email`}
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={editFields.email}
+                  onChange={(event) => setEditFields({ ...editFields, email: event.target.value })}
+                  placeholder="Leave unchanged"
+                />
+              </div>
+              <div className="field-group field-full-width">
+                <label htmlFor={`edit-${entityType}-password`}>Password</label>
+                <input
+                  id={`edit-${entityType}-password`}
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={editFields.password}
+                  onChange={(event) => setEditFields({ ...editFields, password: event.target.value })}
+                  placeholder="Leave unchanged"
+                />
               </div>
               {updateError && <p className="add-user-error" role="alert">{updateError}</p>}
               <footer className="add-user-form-actions">
@@ -319,7 +319,7 @@ export default function UserModals({
                 disabled={isDeleting}
                 onClick={() => setIsDeleteOpen(false)}
               >
-                ×
+                x
               </button>
             </header>
             <form className="add-user-form" onSubmit={onDelete}>

@@ -12,7 +12,7 @@ export default function Sections({ onSectionsChange }) {
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [sort, setSort] = useState({ column: 'Section Name', direction: 1 })
+  const [sort] = useState({ column: 'Section Name', direction: 1 })
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Modal dialog state: '' | 'add' | 'edit' | 'delete'
@@ -84,16 +84,6 @@ export default function Sections({ onSectionsChange }) {
     setDeleteSectionId('')
     setIsDeleteConfirmed(false)
     setMutationError('')
-  }
-
-  const handleSortChange = (column) => {
-    setSort((prev) => {
-      if (prev.column === column) {
-        return { column, direction: prev.direction === 1 ? -1 : 1 }
-      }
-      return { column, direction: 1 }
-    })
-    setCurrentPage(1)
   }
 
   const handleAddSection = async (event) => {

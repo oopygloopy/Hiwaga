@@ -25,7 +25,7 @@ function Overview({ user }) {
   const [isSignOutOpen, setIsSignOutOpen] = useState(false)
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
-  const [editProfileFields, setEditProfileFields] = useState({ email: '', password: '', first_name: '', last_name: '', middle_name: '' })
+  const [editProfileFields, setEditProfileFields] = useState({ email: '', password: '', confirm_password: '', first_name: '', last_name: '', middle_name: '' })
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [editProfileError, setEditProfileError] = useState('')
 
@@ -474,6 +474,11 @@ function Overview({ user }) {
     event.preventDefault()
     setEditProfileError('')
 
+    if (editProfileFields.password && editProfileFields.password !== editProfileFields.confirm_password) {
+      setEditProfileError('Passwords do not match.')
+      return
+    }
+
     const patch = { uuid: user.id }
     for (const field of ['email', 'password', 'first_name', 'last_name', 'middle_name']) {
       const value = editProfileFields[field].trim()
@@ -555,6 +560,7 @@ function Overview({ user }) {
         },
         body: JSON.stringify({
           ...newStudent,
+          middle_name: newStudent.middle_name.trim() || null,
           section: (newStudent.section !== '' && newStudent.section !== null && newStudent.section !== undefined && !Number.isNaN(Number(newStudent.section)))
             ? Number(newStudent.section)
             : null,
@@ -797,7 +803,7 @@ function Overview({ user }) {
                 onClick={() => {
                   setIsNavOpen(false)
                   setEditProfileError('')
-                  setEditProfileFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '' })
+                  setEditProfileFields({ email: '', password: '', confirm_password: '', first_name: '', last_name: '', middle_name: '' })
                   setIsEditProfileOpen(true)
                 }}
               >
@@ -857,58 +863,69 @@ function Overview({ user }) {
               </header>
               <form className="add-user-form" onSubmit={handleEditProfile}>
                 <div className="field-group">
-                  <label htmlFor="edit-profile-email">Email (leave blank to keep)</label>
-                  <input
-                    id="edit-profile-email"
-                    type="email"
-                    autoComplete="email"
-                    value={editProfileFields.email}
-                    onChange={(event) => setEditProfileFields({ ...editProfileFields, email: event.target.value })}
-                    placeholder="New email"
-                  />
-                </div>
-                <div className="field-group">
-                  <label htmlFor="edit-profile-password">Password (leave blank to keep)</label>
-                  <input
-                    id="edit-profile-password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={editProfileFields.password}
-                    onChange={(event) => setEditProfileFields({ ...editProfileFields, password: event.target.value })}
-                    placeholder="New password"
-                  />
-                </div>
-                <div className="field-group">
-                  <label htmlFor="edit-profile-first-name">First name (leave blank to keep)</label>
+                  <label htmlFor="edit-profile-first-name">First name</label>
                   <input
                     id="edit-profile-first-name"
                     type="text"
                     autoComplete="given-name"
                     value={editProfileFields.first_name}
                     onChange={(event) => setEditProfileFields({ ...editProfileFields, first_name: event.target.value })}
-                    placeholder="New first name"
+                    placeholder="Leave unchanged"
                   />
                 </div>
                 <div className="field-group">
-                  <label htmlFor="edit-profile-last-name">Last name (leave blank to keep)</label>
+                  <label htmlFor="edit-profile-last-name">Last name</label>
                   <input
                     id="edit-profile-last-name"
                     type="text"
                     autoComplete="family-name"
                     value={editProfileFields.last_name}
                     onChange={(event) => setEditProfileFields({ ...editProfileFields, last_name: event.target.value })}
-                    placeholder="New last name"
+                    placeholder="Leave unchanged"
                   />
                 </div>
-                <div className="field-group">
-                  <label htmlFor="edit-profile-middle-name">Middle name (leave blank to keep)</label>
+                <div className="field-group field-full-width">
+                  <label htmlFor="edit-profile-middle-name">Middle name</label>
                   <input
                     id="edit-profile-middle-name"
                     type="text"
                     autoComplete="additional-name"
                     value={editProfileFields.middle_name}
                     onChange={(event) => setEditProfileFields({ ...editProfileFields, middle_name: event.target.value })}
-                    placeholder="New middle name"
+                    placeholder="Leave unchanged"
+                  />
+                </div>
+                <div className="field-group field-full-width">
+                  <label htmlFor="edit-profile-email">New Email</label>
+                  <input
+                    id="edit-profile-email"
+                    type="email"
+                    autoComplete="email"
+                    value={editProfileFields.email}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, email: event.target.value })}
+                    placeholder="Leave unchanged"
+                  />
+                </div>
+                <div className="field-group field-full-width">
+                  <label htmlFor="edit-profile-password">New Password</label>
+                  <input
+                    id="edit-profile-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={editProfileFields.password}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, password: event.target.value })}
+                    placeholder="Leave unchanged"
+                  />
+                </div>
+                <div className="field-group field-full-width">
+                  <label htmlFor="edit-profile-confirm-password">Confirm password</label>
+                  <input
+                    id="edit-profile-confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={editProfileFields.confirm_password}
+                    onChange={(event) => setEditProfileFields({ ...editProfileFields, confirm_password: event.target.value })}
+                    placeholder="Confirm new password"
                   />
                 </div>
                 {editProfileError && <p className="add-user-error" role="alert">{editProfileError}</p>}

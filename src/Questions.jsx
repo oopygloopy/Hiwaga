@@ -244,14 +244,6 @@ export default function Questions() {
               </button>
             </header>
             <form className="add-user-form" onSubmit={handleSaveQuestion}>
-              {dialog === 'edit' && (
-                <div className="field-group">
-                  <label>Selected Question</label>
-                  <p className="modal-readonly-target">
-                    {questions.find((question) => String(question.id) === String(selectedQuestionId))?.question || 'Selected Question'}
-                  </p>
-                </div>
-              )}
               <div className="field-group edit-user-profile-select">
                 <label htmlFor="question-text">Question</label>
                 <input

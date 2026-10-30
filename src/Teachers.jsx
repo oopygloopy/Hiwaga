@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import DataTable from './DataTable.jsx'
 import PaginationControls from './PaginationControls.jsx'
 import UserModals from './UserModals.jsx'
 import { getProfileLabel, getProfileUuid } from './utils/formatters'
 import { supabase } from './utils/supabase'
 import resetIcon from './assets/reset.svg'
+import checkIcon from './assets/check.svg'
 import deleteIcon from './assets/delete.svg'
 
 export default function Teachers({
@@ -30,7 +31,6 @@ export default function Teachers({
   setEditUserFields,
   isUpdatingUser,
   updateUserError,
-  setUpdateUserError,
   handleUpdateUser,
   isDeleteUserOpen,
   setIsDeleteUserOpen,
@@ -45,6 +45,16 @@ export default function Teachers({
 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [resetStatus, setResetStatus] = useState({})
+  const [confirmResetUuid, setConfirmResetUuid] = useState(null)
+  const confirmTimeoutRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimeoutRef.current) {
+        clearTimeout(confirmTimeoutRef.current)
+      }
+    }
+  }, [])
   const manageableProfiles = profiles
   const sortedTeachers = [...filteredUsers].sort((firstTeacher, secondTeacher) =>
     String(firstTeacher.Name ?? '').localeCompare(String(secondTeacher.Name ?? ''), undefined, {
@@ -178,6 +188,27 @@ export default function Teachers({
     }
   }
 
+  const handleResetClick = (uuid) => {
+    if (!uuid) return
+    if (confirmResetUuid === uuid) {
+      if (confirmTimeoutRef.current) {
+        clearTimeout(confirmTimeoutRef.current)
+        confirmTimeoutRef.current = null
+      }
+      setConfirmResetUuid(null)
+      handleResetPassword(uuid)
+    } else {
+      if (confirmTimeoutRef.current) {
+        clearTimeout(confirmTimeoutRef.current)
+      }
+      setConfirmResetUuid(uuid)
+      confirmTimeoutRef.current = setTimeout(() => {
+        setConfirmResetUuid(null)
+        confirmTimeoutRef.current = null
+      }, 3500)
+    }
+  }
+
   return (
     <div className="dashboard-content">
       <p className="view-hint">Lists the name, section (if applicable), and the last activity of every teacher.</p>
@@ -211,17 +242,18 @@ export default function Teachers({
             rowActions={(row) => {
               const uuid = getUuidForRow(row)
               const status = uuid ? resetStatus[uuid] : null
+              const isConfirming = confirmResetUuid === uuid
               return (
                 <div className="row-actions">
                   <button
                     type="button"
-                    className="row-action-btn row-action-reset"
-                    title="Reset password to admin123"
-                    aria-label={`Reset password for ${row.Name || 'teacher'}`}
+                    className={`row-action-btn row-action-reset ${isConfirming ? 'row-action-confirm-reset' : ''}`}
+                    title={isConfirming ? 'Click again to confirm password reset' : 'Reset password to admin123'}
+                    aria-label={isConfirming ? `Confirm reset password for ${row.Name || 'teacher'}` : `Reset password for ${row.Name || 'teacher'}`}
                     disabled={status?.type === 'loading'}
-                    onClick={() => handleResetPassword(uuid)}
+                    onClick={() => handleResetClick(uuid)}
                   >
-                    <img src={resetIcon} alt="" aria-hidden="true" />
+                    <img src={isConfirming ? checkIcon : resetIcon} alt="" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -268,7 +300,7 @@ export default function Teachers({
         isCreating={isCreatingUser}
         createError={createUserError}
         onCreate={handleCreateUser}
-        isEditOpen={false}
+        isEditOpen={isEditUserOpen}
         setIsEditOpen={setIsEditUserOpen}
         selectedProfileUuid={selectedProfileUuid}
         setSelectedProfileUuid={setSelectedProfileUuid}

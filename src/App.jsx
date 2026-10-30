@@ -8,6 +8,7 @@ import einsteinLogo from './assets/einsteinlogo.png'
 import crossedSwordsIcon from './assets/crossedswords.svg'
 import schoolIcon from './assets/school.svg'
 import chartIcon from './assets/chart.svg'
+import gamePreview from './assets/game-preview.png'
 
 const Overview = lazy(() => import('./Overview.jsx'))
 const MAX_LOGIN_ATTEMPTS = 5
@@ -68,6 +69,11 @@ function App() {
     }
   }, [])
 
+  const closeLogin = () => {
+    setIsLoginOpen(false)
+    setShowPassword(false)
+  }
+
   useEffect(() => {
     if (!pendingSession) return undefined
 
@@ -107,11 +113,6 @@ function App() {
       isCurrent = false
     }
   }, [pendingSession])
-
-  const closeLogin = () => {
-    setIsLoginOpen(false)
-    setShowPassword(false)
-  }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -207,8 +208,8 @@ function App() {
           </div>
           <a
             className="home-download-btn"
-            href="/hiwaga.apk"
-            download="Hiwaga.apk"
+            href="downloads/HIWAGA.apk"
+            download
           >
             Download the Game
           </a>
@@ -228,10 +229,13 @@ function App() {
             </p>
           </div>
 
-            <div className="about-screenshot-placeholder" aria-label="Game Preview">
-              <span>Game Screenshot</span>
-              <span className="placeholder-sub">Coming Soon</span>
-            </div>
+          <div className="about-media-showcase">
+            <img
+              className="about-preview-image"
+              src={gamePreview}
+              alt="Hiwaga game preview"
+            />
+          </div>
         </div>
 
         <div className="about-pillars-grid">

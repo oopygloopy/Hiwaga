@@ -299,6 +299,15 @@
   align-items: center;
 }
 
+.about-preview-image {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
 .about-screenshot-placeholder {
   display: flex;
   flex-direction: column;
@@ -372,6 +381,7 @@
     grid-template-columns: 1fr;
   }
 
+  .about-preview-image,
   .about-screenshot-placeholder {
     max-width: 220px;
   }
@@ -845,13 +855,22 @@
 .add-user-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .add-user-form .field-group {
   min-width: 0;
+  gap: 4px;
 }
 
+.add-user-form .field-group input,
+.add-user-form .field-group select,
+.add-user-form .field-group textarea {
+  padding: 8px 11px;
+  font-size: 14.5px;
+}
+
+.field-full-width,
 .edit-user-profile-select {
   grid-column: 1 / -1;
 }
@@ -2661,6 +2680,16 @@
 
 .row-action-reset:hover img {
   filter: invert(49%) sepia(85%) saturate(1450%) hue-rotate(15deg) brightness(95%) contrast(98%);
+}
+
+.row-action-reset.row-action-confirm-reset {
+  border-color: #2f9e44;
+  color: #2f9e44;
+  background: rgba(47, 158, 68, 0.16);
+}
+
+.row-action-reset.row-action-confirm-reset img {
+  filter: invert(48%) sepia(79%) saturate(463%) hue-rotate(85deg) brightness(94%) contrast(92%);
 }
 
 .row-action-delete:hover {

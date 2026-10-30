@@ -26,8 +26,8 @@ export default function BatchUploadModal({ isOpen, onClose, sections = [], onSuc
     const sampleSection = sections.length > 0 ? (sections[0].section_name || '1') : '1'
     const headers = ['email', 'password', 'first_name', 'last_name', 'middle_name', 'section']
     const sampleRows = [
-      ['student1@school.edu', 'Pass1234!', 'Juan', 'Dela Cruz', 'Santos', sampleSection],
-      ['student2@school.edu', 'Pass1234!', 'Maria Clara', 'Ibarra', 'Reyes', sampleSection],
+      ['student1@sample.com', 'Pass1234!', 'Juan', 'Dela Cruz', 'Santos', sampleSection],
+      ['student2@sample.com', 'Pass1234!', 'Maria Clara', 'Ibarra', 'Reyes', sampleSection],
     ]
     const csvContent = [headers.join(','), ...sampleRows.map((r) => r.join(','))].join('\r\n')
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' })
@@ -160,7 +160,7 @@ export default function BatchUploadModal({ isOpen, onClose, sections = [], onSuc
               password: row.password,
               first_name: row.first_name,
               last_name: row.last_name,
-              middle_name: row.middle_name,
+              middle_name: row.middle_name.trim() || null,
               section: Number(row.sectionId),
             }),
           })

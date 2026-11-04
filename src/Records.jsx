@@ -48,6 +48,7 @@ export default function Records({
   const [sort] = useState({ column: 'Date & Time', direction: -1 })
   const [selectedStudentId, setSelectedStudentId] = useState('')
   const [selectedChapter, setSelectedChapter] = useState('')
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
   const [allUsers, setAllUsers] = useState([])
   const [sections, setSections] = useState([])
@@ -63,11 +64,11 @@ export default function Records({
       const [profilesResult, sectionsResult] = await Promise.all([
         supabase
           .from('profiles')
-          .select('user_id, first_name, last_name, middle_name, section, section_rel:sections!section(section_name)')
+          .select('user_id, first_name, last_name, middle_name, section, section_rel:sections!section(section_name, school_year)')
           .order('last_name', { ascending: true }),
         supabase
           .from('sections')
-          .select('id, section_name')
+          .select('id, section_name, school_year')
           .order('section_name', { ascending: true }),
       ])
 
@@ -91,10 +92,22 @@ export default function Records({
     }
   }, [])
 
-  // Filter user dropdown options by selected section
+  const schoolYearOptions = Array.from(
+    new Set(sections.map((s) => s.school_year).filter(Boolean)),
+  ).sort((a, b) => b.localeCompare(a))
+
+  const filteredSectionOptions = selectedSchoolYear
+    ? sections.filter((s) => (s.school_year || '').trim() === selectedSchoolYear.trim())
+    : sections
+
+  // Filter user dropdown options by selected school year and section
   const userOptions = allUsers
     .filter((p) => {
       if (!p.user_id) return false
+      if (selectedSchoolYear) {
+        const sy = p.section_rel?.school_year || ''
+        if (sy.trim() !== selectedSchoolYear.trim()) return false
+      }
       if (!selectedSection) return true
       const sectionName = p.section_rel?.section_name || (p.section !== null && p.section !== undefined ? String(p.section) : '')
       return String(sectionName).trim().toLowerCase() === selectedSection.trim().toLowerCase()
@@ -119,7 +132,7 @@ export default function Records({
       let query = supabase
         .from('records')
         .select(
-          'record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name, section, section_rel:sections!section(section_name))',
+          'record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name, section, section_rel:sections!section(section_name, school_year))',
           { count: 'exact' }
         )
 
@@ -149,14 +162,21 @@ export default function Records({
         return
       }
 
-      // Filter by section on client side if records are returned
+      // Filter by school year and section on client side if records are returned
       let matchedRows = (data ?? []).map(formatRecord)
       let currentTotal = count ?? 0
 
-      if (selectedSection) {
+      if (selectedSchoolYear || selectedSection) {
         const rawFiltered = (data ?? []).filter((r) => {
-          const sec = r.profile?.section_rel?.section_name || (r.profile?.section !== null && r.profile?.section !== undefined ? String(r.profile.section) : '')
-          return String(sec).trim().toLowerCase() === selectedSection.trim().toLowerCase()
+          if (selectedSchoolYear) {
+            const sy = r.profile?.section_rel?.school_year || ''
+            if (sy.trim() !== selectedSchoolYear.trim()) return false
+          }
+          if (selectedSection) {
+            const sec = r.profile?.section_rel?.section_name || (r.profile?.section !== null && r.profile?.section !== undefined ? String(r.profile.section) : '')
+            if (String(sec).trim().toLowerCase() !== selectedSection.trim().toLowerCase()) return false
+          }
+          return true
         })
         currentTotal = rawFiltered.length
         matchedRows = rawFiltered.slice(from, to + 1).map(formatRecord)
@@ -174,7 +194,7 @@ export default function Records({
     return () => {
       isMounted = false
     }
-  }, [currentPage, sort, selectedChapter, selectedSection])
+  }, [currentPage, sort, selectedChapter, selectedSchoolYear, selectedSection])
 
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const page = Math.min(currentPage, pageCount)
@@ -189,7 +209,7 @@ export default function Records({
   const fetchExportRecords = async () => {
     let query = supabase
       .from('records')
-      .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name, section, section_rel:sections!section(section_name))')
+      .select('record_id, corr_percent, correct_ans, total_question, time_elapsed_sec, finished_at, chapter, user, profile:profiles!user(first_name, last_name, middle_name, section, section_rel:sections!section(section_name, school_year))')
 
     if (selectedChapter) query = query.eq('chapter', selectedChapter)
 
@@ -208,6 +228,12 @@ export default function Records({
     if (exportError) throw exportError
 
     let results = data ?? []
+    if (selectedSchoolYear) {
+      results = results.filter((r) => {
+        const sy = r.profile?.section_rel?.school_year || ''
+        return sy.trim() === selectedSchoolYear.trim()
+      })
+    }
     if (selectedSection) {
       results = results.filter((r) => {
         const sec = r.profile?.section_rel?.section_name || (r.profile?.section !== null && r.profile?.section !== undefined ? String(r.profile.section) : '')
@@ -329,6 +355,29 @@ export default function Records({
           <div className="records-toolbar">
             <div className="records-filter-controls">
               <label>
+                School Year
+                <select
+                  value={selectedSchoolYear}
+                  onChange={(event) => {
+                    const newSY = event.target.value
+                    setSelectedSchoolYear(newSY)
+                    if (newSY && selectedSection) {
+                      const secObj = sections.find((s) => s.section_name === selectedSection)
+                      if (secObj && (secObj.school_year || '').trim() !== newSY.trim()) {
+                        setSelectedSection('')
+                      }
+                    }
+                    setCurrentPage(1)
+                  }}
+                >
+                  <option value="">All school years</option>
+                  {schoolYearOptions.map((sy) => (
+                    <option key={sy} value={sy}>{sy}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
                 Chapter
                 <select
                   value={selectedChapter}
@@ -354,8 +403,10 @@ export default function Records({
                   }}
                 >
                   <option value="">All sections</option>
-                  {sections.map(({ id, section_name }) => (
-                    <option key={id} value={section_name}>{section_name}</option>
+                  {filteredSectionOptions.map(({ id, section_name, school_year }) => (
+                    <option key={id} value={section_name}>
+                      {section_name}{!selectedSchoolYear && school_year ? ` (${school_year})` : ''}
+                    </option>
                   ))}
                 </select>
               </label>

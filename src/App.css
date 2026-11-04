@@ -260,7 +260,7 @@
 .info-section h2 {
   margin-bottom: 18px;
   color: var(--text-h);
-  font-size: clamp(28px, 5vw, 42px);
+  font-size: clamp(20px, 5vw, 32px);
   font-weight: 600;
 }
 
@@ -1855,6 +1855,17 @@
     font-size: 26px;
   }
 
+  .info-section > p:not(.welcome-kicker),
+  .about-text-content p:not(.welcome-kicker),
+  .home-glass-card .welcome-description,
+  .welcome-description {
+    font-size: 16px;
+  }
+
+  .overview-stat p {
+    font-size: 24px;
+  }
+
   .overview-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1936,11 +1947,31 @@
 
 @media (max-width: 480px) {
   .welcome-panel h1 {
-    font-size: 42px;
+    font-size: 28px;
   }
 
+  .home-glass-card .welcome-description,
   .welcome-description {
-    font-size: 16px;
+    font-size: 15px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 20px;
+  }
+
+  .overview-stat p {
+    font-size: 22px;
+  }
+
+  .recent-activity h2,
+  .login-dialog-header h2,
+  .add-user-dialog-header h2,
+  .change-password-dialog-header h2 {
+    font-size: 18px;
+  }
+
+  .student-summary-name {
+    font-size: 18px;
   }
 
   .add-user-form {
@@ -2714,15 +2745,28 @@
   filter: invert(48%) sepia(79%) saturate(463%) hue-rotate(85deg) brightness(94%) contrast(92%);
 }
 
-.row-action-delete:hover {
+.row-action-delete:hover,
+.row-action-archive:hover {
   border-color: #e03131;
   color: #e03131;
   background: rgba(224, 49, 49, 0.12);
   transform: translateY(-1px);
 }
 
-.row-action-delete:hover img {
+.row-action-delete:hover img,
+.row-action-archive:hover img {
   filter: invert(26%) sepia(89%) saturate(4174%) hue-rotate(347deg) brightness(91%) contrast(95%);
+}
+
+.row-action-restore:hover {
+  border-color: #2f9e44;
+  color: #2f9e44;
+  background: rgba(47, 158, 68, 0.14);
+  transform: translateY(-1px);
+}
+
+.row-action-restore:hover img {
+  filter: invert(48%) sepia(79%) saturate(463%) hue-rotate(85deg) brightness(94%) contrast(92%);
 }
 
 .modal-readonly-target {

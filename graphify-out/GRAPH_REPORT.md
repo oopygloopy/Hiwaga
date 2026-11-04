@@ -1,23 +1,23 @@
-# Graph Report - Hiwaga-Capstone  (2026-10-30)
+# Graph Report - Hiwaga-Capstone  (2026-11-05)
 
 ## Corpus Check
-- 66 files · ~31,401 words
+- 66 files · ~33,030 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 5 file(s) not represented in the graph (top: .css 2, .example 1, (none) 1)
+- Unclassified: 6 file(s) not represented in the graph (top: (none) 2, .css 2, .example 1)
 
 ## Summary
-- 281 nodes · 417 edges · 44 communities (11 shown, 33 thin omitted)
+- 282 nodes · 419 edges · 44 communities (11 shown, 33 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dca9f225`
+- Built from commit: `29d27f15`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - package.json
-- StudentSummary.jsx
+- Records.jsx
 - Leaderboard.jsx
 - Overview.jsx
 - Supabase
@@ -74,16 +74,16 @@
 10. `UserModals()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Students()` --calls--> `BatchUploadModal()`  [EXTRACTED]
-  src/Students.jsx → src/BatchUploadModal.jsx
-- `Leaderboard()` --calls--> `PaginationControls()`  [EXTRACTED]
-  src/Leaderboard.jsx → src/PaginationControls.jsx
-- `Leaderboard()` --calls--> `getProfileLabel()`  [EXTRACTED]
-  src/Leaderboard.jsx → src/utils/formatters.js
-- `Leaderboard()` --calls--> `shortenName()`  [EXTRACTED]
-  src/Leaderboard.jsx → src/utils/formatters.js
 - `Overview()` --calls--> `getProfileLabel()`  [EXTRACTED]
   src/Overview.jsx → src/utils/formatters.js
+- `Overview()` --calls--> `getProfileUuid()`  [EXTRACTED]
+  src/Overview.jsx → src/utils/formatters.js
+- `Records()` --calls--> `PaginationControls()`  [EXTRACTED]
+  src/Records.jsx → src/PaginationControls.jsx
+- `formatRecord()` --calls--> `getProfileLabel()`  [EXTRACTED]
+  src/Records.jsx → src/utils/formatters.js
+- `Records()` --calls--> `formatCell()`  [EXTRACTED]
+  src/Records.jsx → src/utils/formatters.js
 
 ## Import Cycles
 - None detected.
@@ -94,17 +94,17 @@
 Cohesion: 0.07
 Nodes (38): dependencies, jspdf@^4.2.1, jspdf-autotable@^5.0.8, react@^19.2.8, react-dom@^19.2.8, @supabase/supabase-js@^2.116.0, devDependencies, eslint@^10.10.0 (+30 more)
 
-### Community 1 - "StudentSummary.jsx"
-Cohesion: 0.13
-Nodes (14): recharts@^3.10.1, recharts, BatchUploadModal(), GradeDistribution(), getScoreColor(), OverallStats(), Leaderboard(), ChapterMasteryBars() (+6 more)
+### Community 1 - "Records.jsx"
+Cohesion: 0.15
+Nodes (16): recharts@^3.10.1, react, recharts, getScoreColor(), OverallStats(), formatRecord(), OverallStats, RECORD_COLUMNS (+8 more)
 
 ### Community 2 - "Leaderboard.jsx"
-Cohesion: 0.17
-Nodes (20): react, DataTable(), PaginationControls(), columnLabels, Questions(), formatRecord(), OverallStats, RECORD_COLUMNS (+12 more)
+Cohesion: 0.16
+Nodes (16): BatchUploadModal(), GradeDistribution(), DataTable(), Leaderboard(), PaginationControls(), Questions(), Sections(), Students() (+8 more)
 
 ### Community 3 - "Overview.jsx"
-Cohesion: 0.12
-Nodes (11): App(), Overview, dashboardViews, Leaderboard, LearningProgression, Overview(), Questions, Records (+3 more)
+Cohesion: 0.11
+Nodes (13): App(), Overview, dashboardViews, Leaderboard, LearningProgression, Overview(), Questions, Records (+5 more)
 
 ### Community 4 - "Supabase"
 Cohesion: 0.11
@@ -140,17 +140,17 @@ Nodes (3): Expanding the ESLint configuration, React Compiler, React + Vite
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `Leaderboard.jsx` to `package.json`, `StudentSummary.jsx`, `Overview.jsx`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **Why does `react` connect `Records.jsx` to `package.json`, `Leaderboard.jsx`, `Overview.jsx`?**
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.07073170731707316 - nodes in this community are weakly interconnected._
-- **Should `StudentSummary.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.13405797101449277 - nodes in this community are weakly interconnected._
 - **Should `Overview.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11330049261083744 - nodes in this community are weakly interconnected._
 - **Should `Supabase` be split into smaller, more focused modules?**
   _Cohesion score 0.1111111111111111 - nodes in this community are weakly interconnected._
 - **Should `Changelog` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `Changelog` be split into smaller, more focused modules?**
+  _Cohesion score 0.125 - nodes in this community are weakly interconnected._
+- **Should `Writing Guidelines for Postgres References` be split into smaller, more focused modules?**
   _Cohesion score 0.125 - nodes in this community are weakly interconnected._

@@ -68,6 +68,14 @@ h1 {
   font-size: 52px;
   line-height: 1.15;
   margin: 32px 0;
+
+  @media (max-width: 768px) {
+    font-size: 32px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 26px;
+  }
 }
 
 h2 {
@@ -77,6 +85,10 @@ h2 {
 
   @media (max-width: 1024px) {
     font-size: 20px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 18px;
   }
 }
 

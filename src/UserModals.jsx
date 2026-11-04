@@ -23,16 +23,26 @@ export default function UserModals({
   isUpdating,
   updateError,
   onUpdate,
-  // Delete modal
-  isDeleteOpen,
-  setIsDeleteOpen,
-  selectedDeleteProfileUuid,
-  setSelectedDeleteProfileUuid,
-  isDeleteConfirmed,
-  setIsDeleteConfirmed,
-  isDeleting,
-  deleteError,
-  onDelete,
+  // Archive modal
+  isArchiveOpen,
+  setIsArchiveOpen,
+  selectedArchiveProfileUuid,
+  setSelectedArchiveProfileUuid,
+  isArchiveConfirmed,
+  setIsArchiveConfirmed,
+  isArchiving,
+  archiveError,
+  onArchive,
+  // Restore modal
+  isRestoreOpen,
+  setIsRestoreOpen,
+  selectedRestoreProfileUuid,
+  setSelectedRestoreProfileUuid,
+  isRestoreConfirmed,
+  setIsRestoreConfirmed,
+  isRestoring,
+  restoreError,
+  onRestore,
 }) {
   const targetEditProfile = manageableProfiles.find(
     (p) => String(getProfileUuid(p) ?? '') === String(selectedProfileUuid) ||
@@ -43,14 +53,24 @@ export default function UserModals({
     ? getProfileLabel(targetEditProfile)
     : (selectedProfileUuid || '')
 
-  const targetDeleteProfile = manageableProfiles.find(
-    (p) => String(getProfileUuid(p) ?? '') === String(selectedDeleteProfileUuid) ||
-           String(p.uuid ?? '') === String(selectedDeleteProfileUuid) ||
-           String(p.user_id ?? '') === String(selectedDeleteProfileUuid)
+  const targetArchiveProfile = manageableProfiles.find(
+    (p) => String(getProfileUuid(p) ?? '') === String(selectedArchiveProfileUuid) ||
+           String(p.uuid ?? '') === String(selectedArchiveProfileUuid) ||
+           String(p.user_id ?? '') === String(selectedArchiveProfileUuid)
   )
-  const deleteProfileName = targetDeleteProfile
-    ? getProfileLabel(targetDeleteProfile)
-    : (selectedDeleteProfileUuid || '')
+  const archiveProfileName = targetArchiveProfile
+    ? getProfileLabel(targetArchiveProfile)
+    : (selectedArchiveProfileUuid || '')
+
+  const targetRestoreProfile = manageableProfiles.find(
+    (p) => String(getProfileUuid(p) ?? '') === String(selectedRestoreProfileUuid) ||
+           String(p.uuid ?? '') === String(selectedRestoreProfileUuid) ||
+           String(p.user_id ?? '') === String(selectedRestoreProfileUuid)
+  )
+  const restoreProfileName = targetRestoreProfile
+    ? getProfileLabel(targetRestoreProfile)
+    : (selectedRestoreProfileUuid || '')
+
 
   return (
     <>
@@ -123,8 +143,10 @@ export default function UserModals({
                   required={entityType !== 'teacher'}
                 >
                   <option value="">{entityType === 'teacher' ? 'No Section' : 'Select a section'}</option>
-                  {sections.map(({ id, section_name }) => (
-                    <option key={id} value={id}>{section_name}</option>
+                  {sections.map(({ id, section_name, school_year }) => (
+                    <option key={id} value={id}>
+                      {section_name}{school_year ? ` (${school_year})` : ''}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -256,8 +278,10 @@ export default function UserModals({
                   onChange={(event) => setEditFields({ ...editFields, section: event.target.value })}
                 >
                   <option value="">Keep current section</option>
-                  {sections.map(({ id, section_name }) => (
-                    <option key={id} value={id}>{section_name}</option>
+                  {sections.map(({ id, section_name, school_year }) => (
+                    <option key={id} value={id}>
+                      {section_name}{school_year ? ` (${school_year})` : ''}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -299,43 +323,43 @@ export default function UserModals({
         </div>
       )}
 
-      {isDeleteOpen && (
+      {isArchiveOpen && (
         <div
           className="add-user-backdrop"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !isDeleting) setIsDeleteOpen(false)
+            if (event.target === event.currentTarget && !isArchiving) setIsArchiveOpen(false)
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Escape' && !isDeleting) setIsDeleteOpen(false)
+            if (event.key === 'Escape' && !isArchiving) setIsArchiveOpen(false)
           }}
         >
-          <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby={`delete-${entityType}-title`}>
+          <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby={`archive-${entityType}-title`}>
             <header className="add-user-dialog-header">
-              <h2 id={`delete-${entityType}-title`}>Delete {deleteProfileName || entityType}</h2>
+              <h2 id={`archive-${entityType}-title`}>Archive {archiveProfileName || entityType}</h2>
               <button
                 className="add-user-close"
                 type="button"
                 aria-label="Close dialog"
-                disabled={isDeleting}
-                onClick={() => setIsDeleteOpen(false)}
+                disabled={isArchiving}
+                onClick={() => setIsArchiveOpen(false)}
               >
-                x
+                ×
               </button>
             </header>
-            <form className="add-user-form" onSubmit={onDelete}>
-              {!selectedDeleteProfileUuid && (
+            <form className="add-user-form" onSubmit={onArchive}>
+              {!selectedArchiveProfileUuid && (
                 <div className="field-group edit-user-profile-select">
-                  <label htmlFor={`delete-${entityType}-select`}>Select {entityType}</label>
+                  <label htmlFor={`archive-${entityType}-select`}>Select {entityType}</label>
                   <SearchableSelect
-                    id={`delete-${entityType}-select`}
+                    id={`archive-${entityType}-select`}
                     options={manageableProfiles.map((profile) => ({
                       value: getProfileUuid(profile),
                       label: getProfileLabel(profile),
                     }))}
-                    value={selectedDeleteProfileUuid}
+                    value={selectedArchiveProfileUuid}
                     onChange={(val) => {
-                      setSelectedDeleteProfileUuid(val)
-                      setIsDeleteConfirmed(false)
+                      setSelectedArchiveProfileUuid(val)
+                      setIsArchiveConfirmed(false)
                     }}
                     placeholder={`Choose a ${entityType}`}
                     required
@@ -343,27 +367,100 @@ export default function UserModals({
                 </div>
               )}
               <div className="delete-user-warning">
-                <strong>Warning:</strong> Deleting a {entityType} account removes authentication and all associated records permanently. This cannot be undone.
+                <strong>Notice:</strong> Archiving this {entityType} account will disable their login credentials. All quiz history, scores, and records are safely preserved.
               </div>
               <label className="delete-user-confirmation">
                 <input
                   type="checkbox"
-                  checked={isDeleteConfirmed}
-                  onChange={(event) => setIsDeleteConfirmed(event.target.checked)}
+                  checked={isArchiveConfirmed}
+                  onChange={(event) => setIsArchiveConfirmed(event.target.checked)}
                 />
-                I understand this action is permanent and cannot be undone.
+                I understand this {entityType} account will be archived.
               </label>
-              {deleteError && <p className="add-user-error" role="alert">{deleteError}</p>}
+              {archiveError && <p className="add-user-error" role="alert">{archiveError}</p>}
               <footer className="add-user-form-actions">
-                <button type="button" disabled={isDeleting} onClick={() => setIsDeleteOpen(false)}>
+                <button type="button" disabled={isArchiving} onClick={() => setIsArchiveOpen(false)}>
                   Cancel
                 </button>
                 <button
                   className="delete-user-confirm-button"
                   type="submit"
-                  disabled={isDeleting || !isDeleteConfirmed}
+                  disabled={isArchiving || !isArchiveConfirmed}
                 >
-                  {isDeleting ? `Deleting ${entityType}...` : `Permanently delete ${entityType}`}
+                  {isArchiving ? `Archiving ${entityType}...` : `Archive ${entityType}`}
+                </button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {isRestoreOpen && (
+        <div
+          className="add-user-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isRestoring) setIsRestoreOpen(false)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && !isRestoring) setIsRestoreOpen(false)
+          }}
+        >
+          <section className="add-user-dialog" role="dialog" aria-modal="true" aria-labelledby={`restore-${entityType}-title`}>
+            <header className="add-user-dialog-header">
+              <h2 id={`restore-${entityType}-title`}>Restore {restoreProfileName || entityType}</h2>
+              <button
+                className="add-user-close"
+                type="button"
+                aria-label="Close dialog"
+                disabled={isRestoring}
+                onClick={() => setIsRestoreOpen(false)}
+              >
+                ×
+              </button>
+            </header>
+            <form className="add-user-form" onSubmit={onRestore}>
+              {!selectedRestoreProfileUuid && (
+                <div className="field-group edit-user-profile-select">
+                  <label htmlFor={`restore-${entityType}-select`}>Select {entityType}</label>
+                  <SearchableSelect
+                    id={`restore-${entityType}-select`}
+                    options={manageableProfiles.map((profile) => ({
+                      value: getProfileUuid(profile),
+                      label: getProfileLabel(profile),
+                    }))}
+                    value={selectedRestoreProfileUuid}
+                    onChange={(val) => {
+                      setSelectedRestoreProfileUuid(val)
+                      setIsRestoreConfirmed(false)
+                    }}
+                    placeholder={`Choose a ${entityType}`}
+                    required
+                  />
+                </div>
+              )}
+              <div className="delete-user-warning" style={{ borderColor: '#2f9e44', background: 'rgba(47, 158, 68, 0.08)' }}>
+                Restoring this {entityType} account will re-enable their login and restore their active status.
+              </div>
+              <label className="delete-user-confirmation">
+                <input
+                  type="checkbox"
+                  checked={isRestoreConfirmed}
+                  onChange={(event) => setIsRestoreConfirmed(event.target.checked)}
+                />
+                I confirm that I want to restore this {entityType}.
+              </label>
+              {restoreError && <p className="add-user-error" role="alert">{restoreError}</p>}
+              <footer className="add-user-form-actions">
+                <button type="button" disabled={isRestoring} onClick={() => setIsRestoreOpen(false)}>
+                  Cancel
+                </button>
+                <button
+                  className="delete-user-confirm-button"
+                  type="submit"
+                  style={{ background: '#2f9e44', borderColor: '#2f9e44' }}
+                  disabled={isRestoring || !isRestoreConfirmed}
+                >
+                  {isRestoring ? `Restoring ${entityType}...` : `Restore ${entityType}`}
                 </button>
               </footer>
             </form>

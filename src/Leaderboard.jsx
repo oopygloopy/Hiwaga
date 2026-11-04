@@ -10,6 +10,7 @@ import thirdMedalIcon from './assets/thirdplace.svg'
 export default function Leaderboard() {
   const [students, setStudents] = useState([])
   const [sections, setSections] = useState([])
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
   const [sortBy, setSortBy] = useState('grade')
   const [currentPage, setCurrentPage] = useState(1)
@@ -26,13 +27,13 @@ export default function Leaderboard() {
       try {
         const sectionsPromise = supabase
           .from('sections')
-          .select('id, section_name')
+          .select('id, section_name, school_year')
           .order('section_name', { ascending: true })
 
         for (let offset = 0; ; offset += pageSize) {
           const { data, error: queryError } = await supabase
             .from('records')
-            .select('user, corr_percent, time_elapsed_sec, finished_at, chapter, profile:profiles!user(last_name, first_name, middle_name, section, section_rel:sections!section(section_name))')
+            .select('user, corr_percent, time_elapsed_sec, finished_at, chapter, profile:profiles!user(last_name, first_name, middle_name, section, section_rel:sections!section(section_name, school_year))')
             .range(offset, offset + pageSize - 1)
 
           if (queryError) throw queryError
@@ -70,6 +71,7 @@ export default function Leaderboard() {
             id: userId,
             name: getProfileLabel(record.profile, userId),
             section: sectionName,
+            schoolYear: record.profile?.section_rel?.school_year || '',
             gradeTotal: 0,
             gradeCount: 0,
             timeTotal: 0,
@@ -193,10 +195,24 @@ export default function Leaderboard() {
     return firstTime - secondTime
   })
 
-  // Filter students by selected section
-  const filteredStudents = selectedSection
-    ? sortedStudents.filter((s) => String(s.section ?? '').trim().toLowerCase() === selectedSection.trim().toLowerCase())
-    : sortedStudents
+  const schoolYearOptions = Array.from(
+    new Set(sections.map((s) => s.school_year).filter(Boolean)),
+  ).sort((a, b) => b.localeCompare(a))
+
+  const filteredSectionOptions = selectedSchoolYear
+    ? sections.filter((s) => (s.school_year || '').trim() === selectedSchoolYear.trim())
+    : sections
+
+  // Filter students by selected school year and section
+  const filteredStudents = sortedStudents.filter((s) => {
+    if (selectedSchoolYear) {
+      if ((s.schoolYear || '').trim() !== selectedSchoolYear.trim()) return false
+    }
+    if (selectedSection) {
+      if (String(s.section ?? '').trim().toLowerCase() !== selectedSection.trim().toLowerCase()) return false
+    }
+    return true
+  })
 
   // Podium (Top 3 of filtered results)
   const topThree = filteredStudents.slice(0, 3)
@@ -235,6 +251,30 @@ export default function Leaderboard() {
 
       <div className="records-toolbar" style={{ paddingTop: 0, marginBottom: '16px' }}>
         <div className="records-filter-controls">
+          <label htmlFor="leaderboard-sy-filter">
+            School Year
+            <select
+              id="leaderboard-sy-filter"
+              value={selectedSchoolYear}
+              onChange={(e) => {
+                const newSY = e.target.value
+                setSelectedSchoolYear(newSY)
+                if (newSY && selectedSection) {
+                  const secObj = sections.find((s) => s.section_name === selectedSection)
+                  if (secObj && (secObj.school_year || '').trim() !== newSY.trim()) {
+                    setSelectedSection('')
+                  }
+                }
+                setCurrentPage(1)
+              }}
+            >
+              <option value="">All school years</option>
+              {schoolYearOptions.map((sy) => (
+                <option key={sy} value={sy}>{sy}</option>
+              ))}
+            </select>
+          </label>
+
           <label htmlFor="leaderboard-section-filter">
             Section
             <select
@@ -246,8 +286,10 @@ export default function Leaderboard() {
               }}
             >
               <option value="">All sections</option>
-              {sections.map(({ id, section_name }) => (
-                <option key={id} value={section_name}>{section_name}</option>
+              {filteredSectionOptions.map(({ id, section_name, school_year }) => (
+                <option key={id} value={section_name}>
+                  {section_name}{!selectedSchoolYear && school_year ? ` (${school_year})` : ''}
+                </option>
               ))}
             </select>
           </label>

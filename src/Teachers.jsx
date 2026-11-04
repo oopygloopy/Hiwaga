@@ -6,7 +6,8 @@ import { getProfileLabel, getProfileUuid } from './utils/formatters'
 import { supabase } from './utils/supabase'
 import resetIcon from './assets/reset.svg'
 import checkIcon from './assets/check.svg'
-import deleteIcon from './assets/delete.svg'
+import archiveIcon from './assets/archive.svg'
+import restoreIcon from './assets/restore.svg'
 
 export default function Teachers({
   users,
@@ -32,17 +33,28 @@ export default function Teachers({
   isUpdatingUser,
   updateUserError,
   handleUpdateUser,
-  isDeleteUserOpen,
-  setIsDeleteUserOpen,
-  selectedDeleteProfileUuid,
-  setSelectedDeleteProfileUuid,
-  isDeleteConfirmed,
-  setIsDeleteConfirmed,
-  isDeletingUser,
-  deleteUserError,
-  setDeleteUserError,
-  handleDeleteUser,
+  isArchiveUserOpen,
+  setIsArchiveUserOpen,
+  selectedArchiveProfileUuid,
+  setSelectedArchiveProfileUuid,
+  isArchiveConfirmed,
+  setIsArchiveConfirmed,
+  isArchivingUser,
+  archiveUserError,
+  setArchiveUserError,
+  handleArchiveUser,
+  isRestoreUserOpen,
+  setIsRestoreUserOpen,
+  selectedRestoreProfileUuid,
+  setSelectedRestoreProfileUuid,
+  isRestoreConfirmed,
+  setIsRestoreConfirmed,
+  isRestoringUser,
+  restoreUserError,
+  setRestoreUserError,
+  handleRestoreUser,
 }) {
+  const [statusFilter, setStatusFilter] = useState('active')
   const [currentPage, setCurrentPage] = useState(1)
   const [resetStatus, setResetStatus] = useState({})
   const [confirmResetUuid, setConfirmResetUuid] = useState(null)
@@ -56,15 +68,7 @@ export default function Teachers({
     }
   }, [])
   const manageableProfiles = profiles
-  const sortedTeachers = [...filteredUsers].sort((firstTeacher, secondTeacher) =>
-    String(firstTeacher.Name ?? '').localeCompare(String(secondTeacher.Name ?? ''), undefined, {
-      sensitivity: 'base',
-      numeric: true,
-    }),
-  )
-  const pageCount = Math.max(1, Math.ceil(sortedTeachers.length / 10))
-  const page = Math.min(currentPage, pageCount)
-  const pageTeachers = sortedTeachers.slice((page - 1) * 10, page * 10)
+
 
   const getProfileForRow = (row) => {
     if (!row) return null
@@ -145,6 +149,26 @@ export default function Teachers({
     return row.uuid ?? row.UUID ?? row.user_id ?? row.id ?? ''
   }
 
+  const isRowArchived = (row) => {
+    const profile = getProfileForRow(row)
+    return Boolean(profile?.archived_at || row.archived_at)
+  }
+
+  const statusFilteredTeachers = filteredUsers.filter((teacher) => {
+    const isArchived = isRowArchived(teacher)
+    return statusFilter === 'archived' ? isArchived : !isArchived
+  })
+
+  const sortedTeachers = [...statusFilteredTeachers].sort((firstTeacher, secondTeacher) =>
+    String(firstTeacher.Name ?? '').localeCompare(String(secondTeacher.Name ?? ''), undefined, {
+      sensitivity: 'base',
+      numeric: true,
+    }),
+  )
+  const pageCount = Math.max(1, Math.ceil(sortedTeachers.length / 10))
+  const page = Math.min(currentPage, pageCount)
+  const pageTeachers = sortedTeachers.slice((page - 1) * 10, page * 10)
+
   const handleResetPassword = async (uuid) => {
     if (!uuid) return
     setResetStatus((prev) => ({ ...prev, [uuid]: { type: 'loading', message: 'Resetting...' } }))
@@ -212,7 +236,7 @@ export default function Teachers({
   return (
     <div className="dashboard-content">
       <p className="view-hint">Lists the name, section (if applicable), and the last activity of every teacher.</p>
-      <div className="users-view-toolbar">
+      <div className="users-view-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div className="user-management-actions">
           <button className="add-user-button" type="button" onClick={() => {
             setCreateUserError('')
@@ -220,6 +244,21 @@ export default function Teachers({
           }}>
             Add teacher
           </button>
+        </div>
+
+        <div className="overall-stats-controls" style={{ margin: 0 }}>
+          <label htmlFor="teachers-status-filter">Status</label>
+          <select
+            id="teachers-status-filter"
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value)
+              setCurrentPage(1)
+            }}
+          >
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+          </select>
         </div>
       </div>
 
@@ -245,30 +284,49 @@ export default function Teachers({
               const isConfirming = confirmResetUuid === uuid
               return (
                 <div className="row-actions">
-                  <button
-                    type="button"
-                    className={`row-action-btn row-action-reset ${isConfirming ? 'row-action-confirm-reset' : ''}`}
-                    title={isConfirming ? 'Click again to confirm password reset' : 'Reset password to admin123'}
-                    aria-label={isConfirming ? `Confirm reset password for ${row.Name || 'teacher'}` : `Reset password for ${row.Name || 'teacher'}`}
-                    disabled={status?.type === 'loading'}
-                    onClick={() => handleResetClick(uuid)}
-                  >
-                    <img src={isConfirming ? checkIcon : resetIcon} alt="" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    className="row-action-btn row-action-delete"
-                    title="Delete teacher"
-                    aria-label={`Delete ${row.Name || 'teacher'}`}
-                    onClick={() => {
-                      setDeleteUserError('')
-                      setSelectedDeleteProfileUuid(uuid)
-                      setIsDeleteConfirmed(false)
-                      setIsDeleteUserOpen(true)
-                    }}
-                  >
-                    <img src={deleteIcon} alt="" aria-hidden="true" />
-                  </button>
+                  {statusFilter === 'active' ? (
+                    <>
+                      <button
+                        type="button"
+                        className={`row-action-btn row-action-reset ${isConfirming ? 'row-action-confirm-reset' : ''}`}
+                        title={isConfirming ? 'Click again to confirm password reset' : 'Reset password to admin123'}
+                        aria-label={isConfirming ? `Confirm reset password for ${row.Name || 'teacher'}` : `Reset password for ${row.Name || 'teacher'}`}
+                        disabled={status?.type === 'loading'}
+                        onClick={() => handleResetClick(uuid)}
+                      >
+                        <img src={isConfirming ? checkIcon : resetIcon} alt="" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className="row-action-btn row-action-archive"
+                        title="Archive teacher"
+                        aria-label={`Archive ${row.Name || 'teacher'}`}
+                        onClick={() => {
+                          setArchiveUserError('')
+                          setSelectedArchiveProfileUuid(uuid)
+                          setIsArchiveConfirmed(false)
+                          setIsArchiveUserOpen(true)
+                        }}
+                      >
+                        <img src={archiveIcon} alt="" aria-hidden="true" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="row-action-btn row-action-restore"
+                      title="Restore teacher"
+                      aria-label={`Restore ${row.Name || 'teacher'}`}
+                      onClick={() => {
+                        setRestoreUserError('')
+                        setSelectedRestoreProfileUuid(uuid)
+                        setIsRestoreConfirmed(false)
+                        setIsRestoreUserOpen(true)
+                      }}
+                    >
+                      <img src={restoreIcon} alt="" aria-hidden="true" />
+                    </button>
+                  )}
                   {status && (
                     <span
                       style={{
@@ -309,15 +367,24 @@ export default function Teachers({
         isUpdating={isUpdatingUser}
         updateError={updateUserError}
         onUpdate={handleUpdateUser}
-        isDeleteOpen={isDeleteUserOpen}
-        setIsDeleteOpen={setIsDeleteUserOpen}
-        selectedDeleteProfileUuid={selectedDeleteProfileUuid}
-        setSelectedDeleteProfileUuid={setSelectedDeleteProfileUuid}
-        isDeleteConfirmed={isDeleteConfirmed}
-        setIsDeleteConfirmed={setIsDeleteConfirmed}
-        isDeleting={isDeletingUser}
-        deleteError={deleteUserError}
-        onDelete={handleDeleteUser}
+        isArchiveOpen={isArchiveUserOpen}
+        setIsArchiveOpen={setIsArchiveUserOpen}
+        selectedArchiveProfileUuid={selectedArchiveProfileUuid}
+        setSelectedArchiveProfileUuid={setSelectedArchiveProfileUuid}
+        isArchiveConfirmed={isArchiveConfirmed}
+        setIsArchiveConfirmed={setIsArchiveConfirmed}
+        isArchiving={isArchivingUser}
+        archiveError={archiveUserError}
+        onArchive={handleArchiveUser}
+        isRestoreOpen={isRestoreUserOpen}
+        setIsRestoreOpen={setIsRestoreUserOpen}
+        selectedRestoreProfileUuid={selectedRestoreProfileUuid}
+        setSelectedRestoreProfileUuid={setSelectedRestoreProfileUuid}
+        isRestoreConfirmed={isRestoreConfirmed}
+        setIsRestoreConfirmed={setIsRestoreConfirmed}
+        isRestoring={isRestoringUser}
+        restoreError={restoreUserError}
+        onRestore={handleRestoreUser}
       />
     </div>
   )

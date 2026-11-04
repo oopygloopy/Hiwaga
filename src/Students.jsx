@@ -5,12 +5,15 @@ import UserModals from './UserModals.jsx'
 import BatchUploadModal from './BatchUploadModal.jsx'
 import { getProfileLabel, getProfileUuid } from './utils/formatters'
 import editIcon from './assets/edit.svg'
-import deleteIcon from './assets/delete.svg'
+import archiveIcon from './assets/archive.svg'
+import restoreIcon from './assets/restore.svg'
 
 export default function Students({
   students,
   filteredStudents,
   sections,
+  selectedSchoolYear = '',
+  setSelectedSchoolYear,
   selectedSection,
   setSelectedSection,
   isStudentsLoading,
@@ -34,30 +37,41 @@ export default function Students({
   updateStudentError,
   setUpdateStudentError,
   handleUpdateStudent,
-  isDeleteStudentOpen,
-  setIsDeleteStudentOpen,
-  selectedDeleteProfileUuid,
-  setSelectedDeleteProfileUuid,
-  isDeleteConfirmed,
-  setIsDeleteConfirmed,
-  isDeletingStudent,
-  deleteStudentError,
-  setDeleteStudentError,
-  handleDeleteStudent,
+  isArchiveStudentOpen,
+  setIsArchiveStudentOpen,
+  selectedArchiveProfileUuid,
+  setSelectedArchiveProfileUuid,
+  isArchiveConfirmed,
+  setIsArchiveConfirmed,
+  isArchivingStudent,
+  archiveStudentError,
+  setArchiveStudentError,
+  handleArchiveStudent,
+  isRestoreStudentOpen,
+  setIsRestoreStudentOpen,
+  selectedRestoreProfileUuid,
+  setSelectedRestoreProfileUuid,
+  isRestoreConfirmed,
+  setIsRestoreConfirmed,
+  isRestoringStudent,
+  restoreStudentError,
+  setRestoreStudentError,
+  handleRestoreStudent,
   onRefresh,
 }) {
+  const [statusFilter, setStatusFilter] = useState('active')
   const [currentPage, setCurrentPage] = useState(1)
   const [isBatchUploadOpen, setIsBatchUploadOpen] = useState(false)
+  const schoolYearOptions = Array.from(
+    new Set(sections.map((s) => s.school_year).filter(Boolean)),
+  ).sort((a, b) => b.localeCompare(a))
+
+  const filteredSectionOptions = selectedSchoolYear
+    ? sections.filter((s) => (s.school_year || '').trim() === selectedSchoolYear.trim())
+    : sections
+
   const manageableProfiles = profiles.filter((profile) => !String(profile.role ?? '').toLowerCase().includes('teacher'))
-  const sortedStudents = [...filteredStudents].sort((firstStudent, secondStudent) =>
-    String(firstStudent.Name ?? '').localeCompare(String(secondStudent.Name ?? ''), undefined, {
-      sensitivity: 'base',
-      numeric: true,
-    }),
-  )
-  const pageCount = Math.max(1, Math.ceil(sortedStudents.length / 10))
-  const page = Math.min(currentPage, pageCount)
-  const pageStudents = sortedStudents.slice((page - 1) * 10, page * 10)
+
 
   const getProfileForRow = (row) => {
     if (!row) return null
@@ -131,6 +145,26 @@ export default function Students({
     return null
   }
 
+  const isRowArchived = (row) => {
+    const profile = getProfileForRow(row)
+    return Boolean(profile?.archived_at || row.archived_at)
+  }
+
+  const statusFilteredStudents = filteredStudents.filter((student) => {
+    const isArchived = isRowArchived(student)
+    return statusFilter === 'archived' ? isArchived : !isArchived
+  })
+
+  const sortedStudents = [...statusFilteredStudents].sort((firstStudent, secondStudent) =>
+    String(firstStudent.Name ?? '').localeCompare(String(secondStudent.Name ?? ''), undefined, {
+      sensitivity: 'base',
+      numeric: true,
+    }),
+  )
+  const pageCount = Math.max(1, Math.ceil(sortedStudents.length / 10))
+  const page = Math.min(currentPage, pageCount)
+  const pageStudents = sortedStudents.slice((page - 1) * 10, page * 10)
+
   const getUuidForRow = (row) => {
     const profile = getProfileForRow(row)
     if (profile?.uuid) return profile.uuid
@@ -159,6 +193,41 @@ export default function Students({
         </div>
       </div>
       <div className="overall-stats-controls">
+        <label htmlFor="students-status-filter">Status</label>
+        <select
+          id="students-status-filter"
+          value={statusFilter}
+          onChange={(event) => {
+            setStatusFilter(event.target.value)
+            setCurrentPage(1)
+          }}
+        >
+          <option value="active">Active</option>
+          <option value="archived">Archived</option>
+        </select>
+
+        <label htmlFor="students-sy-filter">School Year</label>
+        <select
+          id="students-sy-filter"
+          value={selectedSchoolYear}
+          onChange={(event) => {
+            const newSY = event.target.value
+            setSelectedSchoolYear?.(newSY)
+            if (newSY && selectedSection) {
+              const secObj = sections.find((s) => s.section_name === selectedSection)
+              if (secObj && (secObj.school_year || '').trim() !== newSY.trim()) {
+                setSelectedSection('')
+              }
+            }
+            setCurrentPage(1)
+          }}
+        >
+          <option value="">All school years</option>
+          {schoolYearOptions.map((sy) => (
+            <option key={sy} value={sy}>{sy}</option>
+          ))}
+        </select>
+
         <label htmlFor="students-section-filter">Section</label>
         <select
           id="students-section-filter"
@@ -169,8 +238,10 @@ export default function Students({
           }}
         >
           <option value="">All sections</option>
-          {sections.map(({ id, section_name }) => (
-            <option key={id} value={section_name}>{section_name}</option>
+          {filteredSectionOptions.map(({ id, section_name, school_year }) => (
+            <option key={id} value={section_name}>
+              {section_name}{!selectedSchoolYear && school_year ? ` (${school_year})` : ''}
+            </option>
           ))}
         </select>
       </div>
@@ -179,7 +250,7 @@ export default function Students({
       {studentsError && <p className="records-error" role="alert">Unable to load students: {studentsError}</p>}
       {!isStudentsLoading && !studentsError && students.length === 0 && <p>No students found.</p>}
       {!isStudentsLoading && !studentsError && students.length > 0 && filteredStudents.length === 0 && (
-        <p>No students found in this section.</p>
+        <p>No students found matching the selected filter.</p>
       )}
       {!isStudentsLoading && !studentsError && filteredStudents.length > 0 && (
         <>
@@ -193,36 +264,56 @@ export default function Students({
             rows={pageStudents}
             rowActions={(row) => (
               <div className="row-actions">
-                <button
-                  type="button"
-                  className="row-action-btn row-action-edit"
-                  title="Edit student"
-                  aria-label={`Edit ${row.Name || 'student'}`}
-                  onClick={() => {
-                    const uuid = getUuidForRow(row)
-                    setUpdateStudentError('')
-                    setSelectedProfileUuid(uuid)
-                    setEditStudentFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
-                    setIsEditStudentOpen(true)
-                  }}
-                >
-                  <img src={editIcon} alt="" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="row-action-btn row-action-delete"
-                  title="Delete student"
-                  aria-label={`Delete ${row.Name || 'student'}`}
-                  onClick={() => {
-                    const uuid = getUuidForRow(row)
-                    setDeleteStudentError('')
-                    setSelectedDeleteProfileUuid(uuid)
-                    setIsDeleteConfirmed(false)
-                    setIsDeleteStudentOpen(true)
-                  }}
-                >
-                  <img src={deleteIcon} alt="" aria-hidden="true" />
-                </button>
+                {statusFilter === 'active' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="row-action-btn row-action-edit"
+                      title="Edit student"
+                      aria-label={`Edit ${row.Name || 'student'}`}
+                      onClick={() => {
+                        const uuid = getUuidForRow(row)
+                        setUpdateStudentError('')
+                        setSelectedProfileUuid(uuid)
+                        setEditStudentFields({ email: '', password: '', first_name: '', last_name: '', middle_name: '', section: '' })
+                        setIsEditStudentOpen(true)
+                      }}
+                    >
+                      <img src={editIcon} alt="" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className="row-action-btn row-action-archive"
+                      title="Archive student"
+                      aria-label={`Archive ${row.Name || 'student'}`}
+                      onClick={() => {
+                        const uuid = getUuidForRow(row)
+                        setArchiveStudentError('')
+                        setSelectedArchiveProfileUuid(uuid)
+                        setIsArchiveConfirmed(false)
+                        setIsArchiveStudentOpen(true)
+                      }}
+                    >
+                      <img src={archiveIcon} alt="" aria-hidden="true" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="row-action-btn row-action-restore"
+                    title="Restore student"
+                    aria-label={`Restore ${row.Name || 'student'}`}
+                    onClick={() => {
+                      const uuid = getUuidForRow(row)
+                      setRestoreStudentError('')
+                      setSelectedRestoreProfileUuid(uuid)
+                      setIsRestoreConfirmed(false)
+                      setIsRestoreStudentOpen(true)
+                    }}
+                  >
+                    <img src={restoreIcon} alt="" aria-hidden="true" />
+                  </button>
+                )}
               </div>
             )}
           />
@@ -249,15 +340,24 @@ export default function Students({
         isUpdating={isUpdatingStudent}
         updateError={updateStudentError}
         onUpdate={handleUpdateStudent}
-        isDeleteOpen={isDeleteStudentOpen}
-        setIsDeleteOpen={setIsDeleteStudentOpen}
-        selectedDeleteProfileUuid={selectedDeleteProfileUuid}
-        setSelectedDeleteProfileUuid={setSelectedDeleteProfileUuid}
-        isDeleteConfirmed={isDeleteConfirmed}
-        setIsDeleteConfirmed={setIsDeleteConfirmed}
-        isDeleting={isDeletingStudent}
-        deleteError={deleteStudentError}
-        onDelete={handleDeleteStudent}
+        isArchiveOpen={isArchiveStudentOpen}
+        setIsArchiveOpen={setIsArchiveStudentOpen}
+        selectedArchiveProfileUuid={selectedArchiveProfileUuid}
+        setSelectedArchiveProfileUuid={setSelectedArchiveProfileUuid}
+        isArchiveConfirmed={isArchiveConfirmed}
+        setIsArchiveConfirmed={setIsArchiveConfirmed}
+        isArchiving={isArchivingStudent}
+        archiveError={archiveStudentError}
+        onArchive={handleArchiveStudent}
+        isRestoreOpen={isRestoreStudentOpen}
+        setIsRestoreOpen={setIsRestoreStudentOpen}
+        selectedRestoreProfileUuid={selectedRestoreProfileUuid}
+        setSelectedRestoreProfileUuid={setSelectedRestoreProfileUuid}
+        isRestoreConfirmed={isRestoreConfirmed}
+        setIsRestoreConfirmed={setIsRestoreConfirmed}
+        isRestoring={isRestoringStudent}
+        restoreError={restoreStudentError}
+        onRestore={handleRestoreStudent}
       />
 
       <BatchUploadModal

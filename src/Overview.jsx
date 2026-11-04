@@ -49,6 +49,7 @@ function Overview({ user }) {
   const [currentProfile, setCurrentProfile] = useState(null)
   const [profiles, setProfiles] = useState([])
   const [sections, setSections] = useState([])
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
   const [studentsRefreshKey, setStudentsRefreshKey] = useState(0)
   const [isStudentsLoading, setIsStudentsLoading] = useState(false)
@@ -68,11 +69,16 @@ function Overview({ user }) {
   })
   const [isUpdatingStudent, setIsUpdatingStudent] = useState(false)
   const [updateStudentError, setUpdateStudentError] = useState('')
-  const [isDeleteStudentOpen, setIsDeleteStudentOpen] = useState(false)
-  const [selectedDeleteProfileUuid, setSelectedDeleteProfileUuid] = useState('')
-  const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false)
-  const [isDeletingStudent, setIsDeletingStudent] = useState(false)
-  const [deleteStudentError, setDeleteStudentError] = useState('')
+  const [isArchiveUserOpen, setIsArchiveUserOpen] = useState(false)
+  const [selectedArchiveProfileUuid, setSelectedArchiveProfileUuid] = useState('')
+  const [isArchiveConfirmed, setIsArchiveConfirmed] = useState(false)
+  const [isArchivingUser, setIsArchivingUser] = useState(false)
+  const [archiveUserError, setArchiveUserError] = useState('')
+  const [isRestoreUserOpen, setIsRestoreUserOpen] = useState(false)
+  const [selectedRestoreProfileUuid, setSelectedRestoreProfileUuid] = useState('')
+  const [isRestoreConfirmed, setIsRestoreConfirmed] = useState(false)
+  const [isRestoringUser, setIsRestoringUser] = useState(false)
+  const [restoreUserError, setRestoreUserError] = useState('')
   const [newStudent, setNewStudent] = useState({
     email: '',
     password: '',
@@ -385,7 +391,7 @@ function Overview({ user }) {
       try {
         const [studentsResult, sectionsResult, profilesResult] = await Promise.all([
           supabase.from('student_view').select('*'),
-          supabase.from('sections').select('id, section_name'),
+          supabase.from('sections').select('id, section_name, school_year'),
           supabase.from('profiles').select('*'),
         ])
 
@@ -432,8 +438,8 @@ function Overview({ user }) {
       try {
         const [teachersResult, sectionsResult, profilesResult] = await Promise.all([
           supabase.from('teacher_view').select('*'),
-          supabase.from('sections').select('id, section_name'),
-          supabase.from('profiles').select('uuid, user_id, first_name, middle_name, last_name, role'),
+          supabase.from('sections').select('id, section_name, school_year, archived_at'),
+          supabase.from('profiles').select('uuid, user_id, first_name, middle_name, last_name, role, archived_at'),
         ])
 
         if (!isMounted) return
@@ -527,7 +533,7 @@ function Overview({ user }) {
 
   const reloadSections = async () => {
     try {
-      const { data } = await supabase.from('sections').select('id, section_name')
+      const { data } = await supabase.from('sections').select('id, section_name, school_year')
       if (data) {
         setSections(
           data
@@ -644,25 +650,25 @@ function Overview({ user }) {
     }
   }
 
-  const handleDeleteStudent = async (event) => {
+  const handleArchiveUser = async (event) => {
     event.preventDefault()
-    setDeleteStudentError('')
+    setArchiveUserError('')
 
-    if (!selectedDeleteProfileUuid) {
-      setDeleteStudentError('Select a user to delete.')
+    if (!selectedArchiveProfileUuid) {
+      setArchiveUserError('Select a user to archive.')
       return
     }
-    if (!isDeleteConfirmed) {
-      setDeleteStudentError('Confirm that you want to permanently delete this user.')
+    if (!isArchiveConfirmed) {
+      setArchiveUserError('Confirm that you want to archive this user.')
       return
     }
 
-    setIsDeletingStudent(true)
+    setIsArchivingUser(true)
 
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       if (sessionError) throw sessionError
-      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to delete a user.')
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to archive a user.')
 
       const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
         method: 'DELETE',
@@ -671,28 +677,87 @@ function Overview({ user }) {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ uuid: selectedDeleteProfileUuid }),
+        body: JSON.stringify({ uuid: selectedArchiveProfileUuid }),
       })
       const responseData = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(responseData?.message || responseData?.error || `Unable to delete user (${response.status}).`)
+        throw new Error(responseData?.message || responseData?.error || `Unable to archive user (${response.status}).`)
       }
 
-      setIsDeleteStudentOpen(false)
-      setSelectedDeleteProfileUuid('')
-      setIsDeleteConfirmed(false)
+      setIsArchiveUserOpen(false)
+      setSelectedArchiveProfileUuid('')
+      setIsArchiveConfirmed(false)
       setStudentsRefreshKey((currentKey) => currentKey + 1)
     } catch (error) {
-      setDeleteStudentError(error.message || 'Unable to delete user.')
+      setArchiveUserError(error.message || 'Unable to archive user.')
     } finally {
-      setIsDeletingStudent(false)
+      setIsArchivingUser(false)
     }
   }
 
-  const filteredStudents = selectedSection
-    ? students.filter((student) => String(student.Section ?? '') === selectedSection)
-    : students
+  const handleRestoreUser = async (event) => {
+    event.preventDefault()
+    setRestoreUserError('')
+
+    if (!selectedRestoreProfileUuid) {
+      setRestoreUserError('Select a user to restore.')
+      return
+    }
+    if (!isRestoreConfirmed) {
+      setRestoreUserError('Confirm that you want to restore this user.')
+      return
+    }
+
+    setIsRestoringUser(true)
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again to restore a user.')
+
+      const response = await fetch('https://iwobhagcimhndnyzppmf.supabase.co/functions/v1/teacher-create-user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ uuid: selectedRestoreProfileUuid, archived_at: null }),
+      })
+      const responseData = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        throw new Error(responseData?.message || responseData?.error || `Unable to restore user (${response.status}).`)
+      }
+
+      setIsRestoreUserOpen(false)
+      setSelectedRestoreProfileUuid('')
+      setIsRestoreConfirmed(false)
+      setStudentsRefreshKey((currentKey) => currentKey + 1)
+    } catch (error) {
+      setRestoreUserError(error.message || 'Unable to restore user.')
+    } finally {
+      setIsRestoringUser(false)
+    }
+  }
+
+  const filteredStudents = students.filter((student) => {
+    if (selectedSchoolYear) {
+      const sec = sections.find(
+        (s) => String(s.section_name).trim().toLowerCase() === String(student.Section ?? '').trim().toLowerCase(),
+      )
+      if (!sec || (sec.school_year || '').trim() !== selectedSchoolYear.trim()) {
+        return false
+      }
+    }
+    if (selectedSection) {
+      if (String(student.Section ?? '').trim().toLowerCase() !== selectedSection.trim().toLowerCase()) {
+        return false
+      }
+    }
+    return true
+  })
 
   const teacherRows = teacherProfiles
   const filteredTeachers = teacherRows
@@ -1109,6 +1174,8 @@ function Overview({ user }) {
               students={students}
               filteredStudents={filteredStudents}
               sections={sections}
+              selectedSchoolYear={selectedSchoolYear}
+              setSelectedSchoolYear={setSelectedSchoolYear}
               selectedSection={selectedSection}
               setSelectedSection={setSelectedSection}
               isStudentsLoading={isStudentsLoading}
@@ -1132,16 +1199,26 @@ function Overview({ user }) {
               updateStudentError={updateStudentError}
               setUpdateStudentError={setUpdateStudentError}
               handleUpdateStudent={handleUpdateStudent}
-              isDeleteStudentOpen={isDeleteStudentOpen}
-              setIsDeleteStudentOpen={setIsDeleteStudentOpen}
-              selectedDeleteProfileUuid={selectedDeleteProfileUuid}
-              setSelectedDeleteProfileUuid={setSelectedDeleteProfileUuid}
-              isDeleteConfirmed={isDeleteConfirmed}
-              setIsDeleteConfirmed={setIsDeleteConfirmed}
-              isDeletingStudent={isDeletingStudent}
-              deleteStudentError={deleteStudentError}
-              setDeleteStudentError={setDeleteStudentError}
-              handleDeleteStudent={handleDeleteStudent}
+              isArchiveStudentOpen={isArchiveUserOpen}
+              setIsArchiveStudentOpen={setIsArchiveUserOpen}
+              selectedArchiveProfileUuid={selectedArchiveProfileUuid}
+              setSelectedArchiveProfileUuid={setSelectedArchiveProfileUuid}
+              isArchiveConfirmed={isArchiveConfirmed}
+              setIsArchiveConfirmed={setIsArchiveConfirmed}
+              isArchivingStudent={isArchivingUser}
+              archiveStudentError={archiveUserError}
+              setArchiveStudentError={setArchiveUserError}
+              handleArchiveStudent={handleArchiveUser}
+              isRestoreStudentOpen={isRestoreUserOpen}
+              setIsRestoreStudentOpen={setIsRestoreUserOpen}
+              selectedRestoreProfileUuid={selectedRestoreProfileUuid}
+              setSelectedRestoreProfileUuid={setSelectedRestoreProfileUuid}
+              isRestoreConfirmed={isRestoreConfirmed}
+              setIsRestoreConfirmed={setIsRestoreConfirmed}
+              isRestoringStudent={isRestoringUser}
+              restoreStudentError={restoreUserError}
+              setRestoreStudentError={setRestoreUserError}
+              handleRestoreStudent={handleRestoreUser}
               onRefresh={() => setStudentsRefreshKey((k) => k + 1)}
             />
           )}
@@ -1172,16 +1249,26 @@ function Overview({ user }) {
               updateUserError={updateStudentError}
               setUpdateUserError={setUpdateStudentError}
               handleUpdateUser={handleUpdateStudent}
-              isDeleteUserOpen={isDeleteStudentOpen}
-              setIsDeleteUserOpen={setIsDeleteStudentOpen}
-              selectedDeleteProfileUuid={selectedDeleteProfileUuid}
-              setSelectedDeleteProfileUuid={setSelectedDeleteProfileUuid}
-              isDeleteConfirmed={isDeleteConfirmed}
-              setIsDeleteConfirmed={setIsDeleteConfirmed}
-              isDeletingUser={isDeletingStudent}
-              deleteUserError={deleteStudentError}
-              setDeleteUserError={setDeleteStudentError}
-              handleDeleteUser={handleDeleteStudent}
+              isArchiveUserOpen={isArchiveUserOpen}
+              setIsArchiveUserOpen={setIsArchiveUserOpen}
+              selectedArchiveProfileUuid={selectedArchiveProfileUuid}
+              setSelectedArchiveProfileUuid={setSelectedArchiveProfileUuid}
+              isArchiveConfirmed={isArchiveConfirmed}
+              setIsArchiveConfirmed={setIsArchiveConfirmed}
+              isArchivingUser={isArchivingUser}
+              archiveUserError={archiveUserError}
+              setArchiveUserError={setArchiveUserError}
+              handleArchiveUser={handleArchiveUser}
+              isRestoreUserOpen={isRestoreUserOpen}
+              setIsRestoreUserOpen={setIsRestoreUserOpen}
+              selectedRestoreProfileUuid={selectedRestoreProfileUuid}
+              setSelectedRestoreProfileUuid={setSelectedRestoreProfileUuid}
+              isRestoreConfirmed={isRestoreConfirmed}
+              setIsRestoreConfirmed={setIsRestoreConfirmed}
+              isRestoringUser={isRestoringUser}
+              restoreUserError={restoreUserError}
+              setRestoreUserError={setRestoreUserError}
+              handleRestoreUser={handleRestoreUser}
             />
           )}
 

@@ -3,7 +3,6 @@ import { supabase } from './utils/supabase'
 import PaginationControls from './PaginationControls.jsx'
 import { formatCell } from './utils/formatters'
 import editIcon from './assets/edit.svg'
-import deleteIcon from './assets/delete.svg'
 
 const columnLabels = {
   question: 'Question',
@@ -215,7 +214,9 @@ export default function Questions() {
                             setDialog('delete')
                           }}
                         >
-                          <img src={deleteIcon} alt="" aria-hidden="true" />
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
                         </button>
                       </div>
                     </td>

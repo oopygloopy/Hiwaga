@@ -30,6 +30,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', se
   const gradientId = `overall-stats-line-${useId().replaceAll(':', '')}`
   const [records, setRecords] = useState([])
   const [internalSections, setInternalSections] = useState([])
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
   const [timeWindow, setTimeWindow] = useState({ days: 0, reference: 0 })
   const [isLoading, setIsLoading] = useState(true)
@@ -41,7 +42,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', se
     const loadRecords = async () => {
       const { data, error: queryError } = await supabase
         .from('records')
-        .select('finished_at, chapter, corr_percent, user, profile:profiles!user(last_name, first_name, section, section_rel:sections!section(section_name))')
+        .select('finished_at, chapter, corr_percent, user, profile:profiles!user(last_name, first_name, section, section_rel:sections!section(section_name, school_year))')
         .order('finished_at', { ascending: true })
 
       if (!isMounted) return
@@ -68,7 +69,7 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', se
 
     supabase
       .from('sections')
-      .select('id, section_name')
+      .select('id, section_name, school_year')
       .order('section_name', { ascending: true })
       .then(({ data }) => {
         if (isMounted && data) {
@@ -90,17 +91,34 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', se
     }
   }, [metric, xAxis, setScoreXAxis])
 
+  const allSections = (sections && sections.length > 0) ? sections : internalSections
+
+  const schoolYearOptions = Array.from(
+    new Set(allSections.map((s) => s.school_year).filter(Boolean)),
+  ).sort((a, b) => b.localeCompare(a))
+
+  const filteredSectionOptions = selectedSchoolYear
+    ? allSections.filter((s) => (s.school_year || '').trim() === selectedSchoolYear.trim())
+    : allSections
+
   const userFilteredRecords = userId
     ? records.filter((record) => String(record.user) === userId)
     : records
 
-  const sectionFilteredRecords = selectedSection
+  const yearFilteredRecords = selectedSchoolYear
     ? userFilteredRecords.filter((record) => {
+      const sy = record.profile?.section_rel?.school_year || ''
+      return sy.trim() === selectedSchoolYear.trim()
+    })
+    : userFilteredRecords
+
+  const sectionFilteredRecords = selectedSection
+    ? yearFilteredRecords.filter((record) => {
       const sec = record.profile?.section_rel?.section_name
         || (record.profile?.section !== null && record.profile?.section !== undefined ? String(record.profile.section) : '')
       return String(sec).trim().toLowerCase() === selectedSection.trim().toLowerCase()
     })
-    : userFilteredRecords
+    : yearFilteredRecords
 
   const filteredRecords = xAxis === 'finished_at' && timeWindow.days > 0
     ? sectionFilteredRecords.filter((record) => {
@@ -291,6 +309,29 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', se
         </div>
 
         <div className="overall-stats-controls">
+          <label htmlFor="overall-stats-school-year">School Year</label>
+          <select
+            id="overall-stats-school-year"
+            value={selectedSchoolYear}
+            onChange={(event) => {
+              const newSY = event.target.value
+              setSelectedSchoolYear(newSY)
+              if (newSY && selectedSection) {
+                const secObj = allSections.find((s) => s.section_name === selectedSection)
+                if (secObj && (secObj.school_year || '').trim() !== newSY.trim()) {
+                  setSelectedSection('')
+                }
+              }
+            }}
+          >
+            <option value="">All school years</option>
+            {schoolYearOptions.map((sy) => (
+              <option key={sy} value={sy}>{sy}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="overall-stats-controls">
           <label htmlFor="overall-stats-section">Section</label>
           <select
             id="overall-stats-section"
@@ -298,8 +339,10 @@ function OverallStats({ xAxis, setScoreXAxis, metric, setMetric, userId = '', se
             onChange={(event) => setSelectedSection(event.target.value)}
           >
             <option value="">All sections</option>
-            {(sections && sections.length > 0 ? sections : internalSections).map(({ id, section_name }) => (
-              <option key={id} value={section_name}>{section_name}</option>
+            {filteredSectionOptions.map(({ id, section_name, school_year }) => (
+              <option key={id} value={section_name}>
+                {section_name}{!selectedSchoolYear && school_year ? ` (${school_year})` : ''}
+              </option>
             ))}
           </select>
         </div>

@@ -1,7 +1,7 @@
 # Graph Report - Hiwaga-Capstone  (2026-11-05)
 
 ## Corpus Check
-- 66 files · ~33,030 words
+- 66 files · ~33,162 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 6 file(s) not represented in the graph (top: (none) 2, .css 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `29d27f15`
+- Built from commit: `d20e9801`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

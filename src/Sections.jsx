@@ -381,11 +381,11 @@ export default function Sections({ onSectionsChange }) {
       {isLoading && <p>Loading sections...</p>}
       {error && <p className="records-error" role="alert">Unable to load sections: {error}</p>}
       {!isLoading && !error && sections.length === 0 && <p>No sections found.</p>}
-      {!isLoading && !error && sections.length > 0 && filteredSections.length === 0 && (
+      {!isLoading && !error && sections.length > 0 && filteredSections.length === 0 && searchQuery.trim() && (
         <p>No {statusFilter} sections found matching &quot;{searchQuery}&quot;.</p>
       )}
 
-      {!isLoading && !error && filteredSections.length > 0 && (
+      {!isLoading && !error && (filteredSections.length > 0 || (!searchQuery.trim() && sections.length > 0)) && (
         <>
           <PaginationControls
             page={page}
